@@ -1,1 +1,1 @@
-# 💬 Chats
+# 💬 Prompts
