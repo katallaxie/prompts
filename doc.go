@@ -1,2 +1,2 @@
-// Package example is a simple example package.
-package example
+// Package prompts is a collection of chat prompts.
+package prompts
