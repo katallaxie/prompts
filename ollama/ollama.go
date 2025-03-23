@@ -39,7 +39,7 @@ func Defaults() *Opts {
 	return &Opts{}
 }
 
-var _ prompts.Prompter = (*Ollama)(nil)
+var _ prompts.Promptable = (*Ollama)(nil)
 
 // Ollama is a chat model.
 type Ollama struct {
@@ -84,14 +84,10 @@ func New(opts ...Opt) (*Ollama, error) {
 	return model, nil
 }
 
-// Complete is a completion.
-
-// Generate ...
+// Complete completes the prompt.
 func (o *Ollama) Complete(ctx context.Context, prompt *prompts.Prompt) (*prompts.Completion, error) {
-	complete := &prompts.Completion{
-		Model:   prompt.Model,
-		Choices: make([]prompts.CompletionChoice, 0),
-	}
+	complete := prompts.NewCompletion()
+	complete.Model = prompt.Model
 
 	req := &api.ChatRequest{
 		Model: conv.String(prompt.Model),
