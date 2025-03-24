@@ -12,6 +12,10 @@ A teeny-tiny package to prompt for answers in [Ollama](https://ollama.com/), [vl
 
 You can find the documentation hosted on [godoc.org](https://godoc.org/github.com/katallaxie/prompts).
 
+## Examples
+
+The examples are located in the [examples](/examples) directory.
+
 ## License
 
 [Apache 2.0](/LICENSE)
