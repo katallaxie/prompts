@@ -1,2 +1,2 @@
-// Package prompts is a collection of chat prompts.
+// Package prompts is a collection of primitives for prompts.
 package prompts

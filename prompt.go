@@ -3,9 +3,6 @@ package prompts
 import (
 	"context"
 	"errors"
-
-	"github.com/katallaxie/streams"
-	"github.com/katallaxie/streams/sources"
 )
 
 // Model is a chat model.
@@ -210,43 +207,12 @@ type Completion struct {
 	Model Model `json:"model"`
 	// Choices are the choices of the response.
 	Choices []CompletionChoice `json:"choices"`
-
-	out chan any
 }
 
 // NewCompletion returns a new completion.
 func NewCompletion() *Completion {
 	c := new(Completion)
 	return c
-}
-
-// NewStreamCompletion returns a new completion.
-func NewStreamCompletion(out chan any) *Completion {
-	c := new(Completion)
-	c.out = make(chan any)
-
-	return c
-}
-
-var _ sources.Source = (*Completion)(nil)
-
-// Out returns the completion as a source.
-func (s *Completion) Out() <-chan any {
-	return s.out
-}
-
-// Pipe pipes the output channel to the input channel.
-func (s *Completion) Pipe(c streams.Connectable) streams.Connectable {
-	go s.stream(c)
-	return c
-}
-
-func (c *Completion) stream(r streams.Receivable) {
-	for x := range c.out {
-		r.In() <- x
-	}
-
-	close(r.In())
 }
 
 // Promptable is a promptable.
