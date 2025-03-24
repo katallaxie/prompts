@@ -85,9 +85,8 @@ func New(opts ...Opt) (*Ollama, error) {
 }
 
 // Complete completes the prompt.
-func (o *Ollama) Complete(ctx context.Context, prompt *prompts.Prompt) (*prompts.Completion, error) {
-	complete := prompts.NewCompletion()
-	complete.Model = prompt.Model
+func (o *Ollama) Complete(ctx context.Context, prompt *prompts.Prompt) (chan any, error) {
+	out := make(chan any)
 
 	req := &api.ChatRequest{
 		Model: conv.String(prompt.Model),
@@ -100,23 +99,29 @@ func (o *Ollama) Complete(ctx context.Context, prompt *prompts.Prompt) (*prompts
 		})
 	}
 
-	fn := func(res api.ChatResponse) error {
-		msg := prompts.CompletionChoice{
-			Message: &prompts.GenericMessage{
-				Role:    prompts.Role(res.Message.Role),
-				Content: res.Message.Content,
-			},
+	go func() {
+		defer close(out)
+
+		fn := func(res api.ChatResponse) error {
+			complete := prompts.Completion{
+				Choices: []prompts.CompletionChoice{
+					{
+						Message: &prompts.GenericMessage{
+							Role:    prompts.Role(res.Message.Role),
+							Content: res.Message.Content,
+						},
+					},
+				},
+				Model: prompts.Model(res.Model),
+			}
+
+			out <- complete
+
+			return nil
 		}
 
-		complete.Choices = append(complete.Choices, msg)
+		_ = o.client.Chat(ctx, req, fn)
+	}()
 
-		return nil
-	}
-
-	err := o.client.Chat(ctx, req, fn)
-	if err != nil {
-		return nil, err
-	}
-
-	return complete, nil
+	return out, nil
 }

@@ -1,14 +1,14 @@
 package main
 
 import (
-	"bytes"
 	"context"
-	"fmt"
-	"io"
 
-	"github.com/katallaxie/pkg/conv"
+	"github.com/katallaxie/pkg/slices"
 	"github.com/katallaxie/prompts"
 	"github.com/katallaxie/prompts/ollama"
+	"github.com/katallaxie/streams"
+	"github.com/katallaxie/streams/sinks"
+	"github.com/katallaxie/streams/sources"
 )
 
 const (
@@ -18,6 +18,11 @@ const (
 	
 	CONCISE SUMMARY:`
 )
+
+func mapCompletionMessages(msg prompts.Completion) string {
+	f := slices.First(msg.Choices...)
+	return f.Message.GetContent()
+}
 
 func main() {
 	api, err := ollama.New(ollama.WithBaseURL("http://localhost:7869"), ollama.WithModel("smollm"))
@@ -39,9 +44,8 @@ func main() {
 		panic(err)
 	}
 
-	r := prompts.NewCompletionReader(res.Choices...)
+	source := sources.NewChanSource(res)
+	sink := sinks.NewStdout()
 
-	buf := bytes.NewBuffer(nil)
-	io.Copy(buf, r)
-	fmt.Print(conv.String(buf))
+	source.Pipe(streams.NewPassThrough()).Pipe(streams.NewMap(mapCompletionMessages)).To(sink)
 }

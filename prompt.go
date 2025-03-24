@@ -210,13 +210,14 @@ type Completion struct {
 }
 
 // NewCompletion returns a new completion.
-func NewCompletion() *Completion {
+func NewCompletion(out chan CompletionChoice) *Completion {
 	c := new(Completion)
+
 	return c
 }
 
 // Promptable is a promptable.
 type Promptable interface {
 	// Prompt prompts a completion.
-	Complete(ctx context.Context, prompt *Prompt) (*Completion, error)
+	Complete(ctx context.Context, prompt *Prompt) (chan any, error)
 }
