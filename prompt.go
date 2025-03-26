@@ -216,6 +216,82 @@ func NewCompletion(out chan CompletionChoice) *Completion {
 	return c
 }
 
+// Tool describes a tool an agent can reach out.
+type Tool struct {
+	// Name is a unique name of the tool.
+	Name string `json:"name"`
+	// Desc is a description of the tool.
+	Desc string `json:"desc"`
+	// Params are the parameters of the tool.
+	Params []ParamOneOf `json:"params"`
+}
+
+// ParamOneOf describes a parameter with a list of possible values.
+type ParamOneOf struct {
+	// ParamOneOf is a parameter with a list of possible values.
+	ParamOneOf isParamOneOf_ParamOneOf
+}
+
+type isParamOneOf_ParamOneOf interface {
+	isParamOneOf()
+}
+
+// GetTool returns the tool parameter.
+func (p *ParamOneOf) GetTool() isParamOneOf_ParamOneOf {
+	if p != nil {
+		return p.ParamOneOf
+	}
+
+	return nil
+}
+
+// GetString returns the string parameter.
+func (p *ParamOneOf) GetString() *ParamOneOfString {
+	if x, ok := p.ParamOneOf.(*ParamOneOfString); ok {
+		return x
+	}
+
+	return nil
+}
+
+// GetInt returns the int parameter.
+func (p *ParamOneOf) GetInt() *ParamOneOfInt {
+	if x, ok := p.ParamOneOf.(*ParamOneOfInt); ok {
+		return x
+	}
+
+	return nil
+}
+
+// ParamOneOfString describes a parameter with a list of possible string values.
+type ParamOneOfString struct {
+	// Desc os the description of the parameter.
+	Desc string `json:"desc"`
+	// Enum is the list of possible values.
+	Enum []string `json:"enum"`
+	// Required indicates if the parameter is required.
+	Required bool `json:"required"`
+	// Params are the parameters of the parameter.
+	Params []ParamOneOf `json:"params"`
+}
+
+func (*ParamOneOfString) isParamOneOf() {}
+
+// ParamOneOfInt describes a parameter with a list of possible int values.
+type ParamOneOfInt struct {
+	// Desc os the description of the parameter.
+	Desc string `json:"desc"`
+	// Required indicates if the parameter is required.
+	Required bool `json:"required"`
+}
+
+func (*ParamOneOfInt) isParamOneOf() {}
+
+// NewParamOneOf returns a parameter that can different types.
+func NewParamOneOf() ParamOneOf {
+	return ParamOneOf{}
+}
+
 // Promptable is a promptable.
 type Promptable interface {
 	// Prompt prompts a completion.
