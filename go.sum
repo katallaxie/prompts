@@ -2,8 +2,8 @@ github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc h1:U9qPSI2PIWSS1
 github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
 github.com/google/go-cmp v0.7.0 h1:wk8382ETsv4JYUZwIsn6YpYiWiBsYLSJiTsyBybVuN8=
 github.com/google/go-cmp v0.7.0/go.mod h1:pXiqmnSA92OHEEa9HXL2W4E7lf9JzCmGVUdgjX3N/iU=
-github.com/katallaxie/pkg v0.7.2-0.20250331112127-a665e87a3051 h1:XLilX7PFFxgB3TetbhvKALozX4WtErfD4L9l8T+3pkw=
-github.com/katallaxie/pkg v0.7.2-0.20250331112127-a665e87a3051/go.mod h1:7WaCAu/FhPPKDVldVH2sDlfglKYupInPvAq9x8az3Lk=
+github.com/katallaxie/pkg v0.7.2 h1:yM+v1uyoNpIuKnAUF0xzfeNTBKG8uKrHAzvvt7hyl8I=
+github.com/katallaxie/pkg v0.7.2/go.mod h1:JuLbiF5TZv7iSpQfaoqQSMaC+O5+E7tCkCJvA3Vi8G0=
 github.com/katallaxie/streams v0.3.2-0.20250331120734-f5f017649505 h1:Q2Bmch0RQCUbPAMxO939u76/IXqSp/VGNtckY/fob1A=
 github.com/katallaxie/streams v0.3.2-0.20250331120734-f5f017649505/go.mod h1:e3MNwzEKyBAWZW9JoS/X2ZfBBAq634qXKga7ZAZxFCM=
 github.com/kr/pretty v0.3.1 h1:flRD4NNwYAUpkphVc1HcthR4KEIFJ65n8Mw5qdRn3LE=
