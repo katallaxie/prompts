@@ -7,7 +7,7 @@ toolchain go1.24.1
 require (
 	github.com/katallaxie/pkg v0.7.2-0.20250331112127-a665e87a3051
 	github.com/katallaxie/streams v0.3.2-0.20250331120734-f5f017649505
-	github.com/ollama/ollama v0.6.2
+	github.com/ollama/ollama v0.6.3
 	github.com/stretchr/testify v1.10.0
 )
 
