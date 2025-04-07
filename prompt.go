@@ -124,9 +124,12 @@ func (m *SystemMessage) GetRole() Role {
 
 // GenericMessage is a generic chat message.
 type GenericMessage struct {
+	// Content is the content of the message.
 	Content string `json:"content,omitempty"`
-	Role    Role   `json:"role,omitempty"`
-	Name    string `json:"name,omitempty"`
+	// Role is the role of the message.
+	Role Role `json:"role,omitempty"`
+	// Name is the name of the message.
+	Name string `json:"name,omitempty"`
 }
 
 // GetContent returns the content of the message.
