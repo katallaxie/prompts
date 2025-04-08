@@ -8,6 +8,11 @@
 
 A teeny-tiny package to prompt for answers in [Ollama](https://ollama.com/), [vllm](https://github.com/vllm-project/vllm) and other OpenAI-compatible API servers.
 
+## Supported APIs
+
+* [Ollama](https://ollama.com/)
+* [Perplexity](https://www.perplexity.ai/)
+
 ## Docs
 
 You can find the documentation hosted on [godoc.org](https://godoc.org/github.com/katallaxie/prompts).
