@@ -160,9 +160,8 @@ func (p *Perplexity) SendCompletionRequest(ctx context.Context, req *prompts.Cha
 }
 
 // SendStreamCompletionRequest sends a streamed completion request to the Perplexity API.
-func (p *Perplexity) SendStreamCompletionRequest(ctx context.Context, req *prompts.ChatCompletionRequest, res chan<- *prompts.ChatCompletionResponse) error {
-	defer close(res)
-
+// nolint:gocyclo
+func (p *Perplexity) SendStreamCompletionRequest(ctx context.Context, req *prompts.ChatCompletionRequest, cb ...func(res *prompts.ChatCompletionResponse) error) error {
 	b, err := json.Marshal(req)
 	if err != nil {
 		return err
@@ -198,9 +197,15 @@ func (p *Perplexity) SendStreamCompletionRequest(ctx context.Context, req *promp
 	}
 
 	stream := prompts.NewStream(NewDecoder(resp), Transformer)
+	defer stream.Close()
 
 	for msg := range stream.Next() {
-		res <- msg
+		for _, f := range cb {
+			err := f(msg)
+			if err != nil {
+				return err
+			}
+		}
 	}
 
 	return stream.Error()

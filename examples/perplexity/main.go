@@ -27,15 +27,7 @@ func main() {
 	req := perplexity.NewStreamCompletionRequest()
 	req.AddMessages(msg...)
 
-	stream := make(chan *prompts.ChatCompletionResponse, 1)
-
-	go func() {
-		for msg := range stream {
-			fmt.Print(msg)
-		}
-	}()
-
-	err := client.SendStreamCompletionRequest(context.Background(), req, stream)
+	err := client.SendStreamCompletionRequest(context.Background(), req, prompts.Print)
 	if err != nil {
 		fmt.Printf("Error: %v\n", err)
 		os.Exit(1)

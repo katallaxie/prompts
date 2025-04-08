@@ -160,9 +160,7 @@ func (o *Ollama) SendCompletionRequest(ctx context.Context, req *prompts.ChatCom
 
 // SendStreamCompletionRequest sends a streamed completion request to the Ollama.
 // nolint:gocyclo
-func (o *Ollama) SendStreamCompletionRequest(ctx context.Context, req *prompts.ChatCompletionRequest, res chan<- *prompts.ChatCompletionResponse) error {
-	defer close(res)
-
+func (o *Ollama) SendStreamCompletionRequest(ctx context.Context, req *prompts.ChatCompletionRequest, cb ...func(res *prompts.ChatCompletionResponse) error) error {
 	b, err := json.Marshal(req)
 	if err != nil {
 		return err
@@ -197,9 +195,15 @@ func (o *Ollama) SendStreamCompletionRequest(ctx context.Context, req *prompts.C
 	}
 
 	stream := prompts.NewStream(NewDecoder(resp), Transformer)
+	defer stream.Close()
 
 	for msg := range stream.Next() {
-		res <- msg
+		for _, f := range cb {
+			err := f(msg)
+			if err != nil {
+				return err
+			}
+		}
 	}
 
 	return stream.Error()

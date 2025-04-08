@@ -1,8 +1,16 @@
 package prompts
 
 import (
+	"fmt"
 	"iter"
 )
+
+// Print is a function that prints the event.
+func Print(res *ChatCompletionResponse) error {
+	fmt.Print(res)
+
+	return nil
+}
 
 // Decoder is an interface for decoding SSE streams.
 type Decoder[E any] interface {
