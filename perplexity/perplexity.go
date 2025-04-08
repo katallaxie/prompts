@@ -104,6 +104,8 @@ type Perplexity struct {
 	opts *Opts
 }
 
+var _ prompts.Chat = (*Perplexity)(nil)
+
 // New returns a new Perplexity.
 func New(opts ...Opt) *Perplexity {
 	options := Defaults()
