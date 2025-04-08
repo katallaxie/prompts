@@ -9,45 +9,50 @@ import (
 	"net/http"
 	"strings"
 
+	"github.com/katallaxie/pkg/utilx"
 	"github.com/tidwall/gjson"
 )
 
+// Decoder is an interface for decoding SSE streams.
 type Decoder interface {
+	Close() error
+	Error() error
 	Event() Event
 	Next() bool
-	Close() error
-	Err() error
 }
 
+// NewDecoder creates a new Decoder based on the content type of the response.
 func NewDecoder(res *http.Response) Decoder {
-	if res == nil || res.Body == nil {
+	if utilx.Or(utilx.Empty(res), utilx.Empty(res.Body)) {
 		return nil
 	}
 
-	var decoder Decoder
 	contentType := res.Header.Get("content-type")
-	if t, ok := decoderTypes[contentType]; ok {
-		decoder = t(res.Body)
-	} else {
-		scanner := bufio.NewScanner(res.Body)
-		decoder = &eventStreamDecoder{rc: res.Body, scn: scanner}
+	if read, ok := decoderTypes[contentType]; ok {
+		return read(res.Body)
 	}
 
-	return decoder
+	scanner := bufio.NewScanner(res.Body)
+	return &eventStreamDecoder{rc: res.Body, scn: scanner}
 }
 
 var decoderTypes = map[string](func(io.ReadCloser) Decoder){}
 
+// RegisterDecoder registers a new decoder for a specific content type.
 func RegisterDecoder(contentType string, decoder func(io.ReadCloser) Decoder) {
 	decoderTypes[strings.ToLower(contentType)] = decoder
 }
 
+// Event represents an event in the SSE stream.
 type Event struct {
+	// Type is the type of the event.
 	Type string
+	// Data is the data of the event.
 	Data []byte
 }
 
-// A base implementation of a Decoder for text/event-stream.
+var _ Decoder = (*eventStreamDecoder)(nil)
+
 type eventStreamDecoder struct {
 	evt Event
 	rc  io.ReadCloser
@@ -55,8 +60,10 @@ type eventStreamDecoder struct {
 	err error
 }
 
+// NewEventStreamDecoder creates a new event stream decoder.
+// nolint:gocyclo
 func (s *eventStreamDecoder) Next() bool {
-	if s.err != nil {
+	if utilx.NotEmpty(s.err) {
 		return false
 	}
 
@@ -64,9 +71,9 @@ func (s *eventStreamDecoder) Next() bool {
 	data := bytes.NewBuffer(nil)
 
 	for s.scn.Scan() {
+		fmt.Print("new message")
 		txt := s.scn.Bytes()
 
-		// Dispatch event on an empty line
 		if len(txt) == 0 {
 			s.evt = Event{
 				Type: event,
@@ -76,17 +83,14 @@ func (s *eventStreamDecoder) Next() bool {
 			return true
 		}
 
-		// Split a string like "event: bar" into name="event" and value=" bar".
 		name, value, _ := bytes.Cut(txt, []byte(":"))
 
-		// Consume an optional space after the colon if it exists.
 		if len(value) > 0 && value[0] == ' ' {
 			value = value[1:]
 		}
 
 		switch string(name) {
 		case "":
-			// An empty line in the for ": something" is a comment and should be ignored.
 			continue
 		case "event":
 			event = string(value)
@@ -95,10 +99,7 @@ func (s *eventStreamDecoder) Next() bool {
 			if s.err != nil {
 				break
 			}
-			_, s.err = data.WriteRune('\n')
-			if s.err != nil {
-				break
-			}
+			s.err = data.WriteByte('\n')
 		}
 	}
 
@@ -109,18 +110,22 @@ func (s *eventStreamDecoder) Next() bool {
 	return false
 }
 
+// Event returns the current event.
 func (s *eventStreamDecoder) Event() Event {
 	return s.evt
 }
 
+// Close closes the decoder.
 func (s *eventStreamDecoder) Close() error {
 	return s.rc.Close()
 }
 
-func (s *eventStreamDecoder) Err() error {
+// Err returns the error if any occurred during decoding.
+func (s *eventStreamDecoder) Error() error {
 	return s.err
 }
 
+// Stream is a stream of events.
 type Stream[T any] struct {
 	decoder Decoder
 	cur     T
@@ -128,6 +133,7 @@ type Stream[T any] struct {
 	done    bool
 }
 
+// NewStream creates a new stream from the given decoder and error.
 func NewStream[T any](decoder Decoder, err error) *Stream[T] {
 	return &Stream[T]{
 		decoder: decoder,
@@ -146,6 +152,8 @@ func NewStream[T any](decoder Decoder, err error) *Stream[T] {
 //	 	if stream.Err() != nil {
 //			...
 //	 	}
+//
+// nolint:gocyclo
 func (s *Stream[T]) Next() bool {
 	if s.err != nil {
 		return false
@@ -193,19 +201,22 @@ func (s *Stream[T]) Next() bool {
 	}
 
 	// decoder.Next() may be false because of an error
-	s.err = s.decoder.Err()
+	s.err = s.decoder.Error()
 
 	return false
 }
 
+// Current returns the current value of the stream.
 func (s *Stream[T]) Current() T {
 	return s.cur
 }
 
-func (s *Stream[T]) Err() error {
+// Err returns the error if any occurred during streaming.
+func (s *Stream[T]) Error() error {
 	return s.err
 }
 
+// Done returns true if the stream has ended.
 func (s *Stream[T]) Close() error {
 	if s.decoder == nil {
 		// already closed

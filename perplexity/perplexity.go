@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/katallaxie/pkg/cast"
 	"github.com/katallaxie/prompts"
 )
 
@@ -17,6 +18,27 @@ const DefaultURL = "https://api.perplexity.ai/chat/completions"
 
 // DefaultTimeout is the default timeout for the Perplexity API.
 const DefaultTimeout = 30 * time.Second
+
+// DefaultModel is the default model for the Perplexity API.
+const DefaultModel = "sonar-pro"
+
+// NewChatCompletionRequest creates a new chat completion request
+func NewChatCompletionRequest() *prompts.ChatCompletionRequest {
+	return &prompts.ChatCompletionRequest{
+		Model:    DefaultModel,
+		Messages: []prompts.ChatCompletionMessage{},
+		Stream:   cast.Ptr(false),
+	}
+}
+
+// NewStreamCompletionRequest creates a new chat stream completion request
+func NewStreamCompletionRequest() *prompts.ChatCompletionRequest {
+	return &prompts.ChatCompletionRequest{
+		Model:    DefaultModel,
+		Messages: []prompts.ChatCompletionMessage{},
+		Stream:   cast.Ptr(true),
+	}
+}
 
 // Opts ...
 type Opts struct {
@@ -82,7 +104,7 @@ type Perplexity struct {
 	opts *Opts
 }
 
-// New returns a new Ollama.
+// New returns a new Perplexity.
 func New(opts ...Opt) *Perplexity {
 	options := Defaults()
 
@@ -126,7 +148,6 @@ func (p *Perplexity) SendCompletionRequest(ctx context.Context, req *prompts.Cha
 
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
-		fmt.Println(err)
 		return nil, err
 	}
 
@@ -163,11 +184,27 @@ func (p *Perplexity) SendStreamCompletionRequest(ctx context.Context, req *promp
 	}
 	defer resp.Body.Close()
 
-	stream := prompts.NewStream[prompts.ChatCompletionResponse](prompts.NewDecoder(resp), err)
+	if resp.StatusCode != http.StatusOK && resp.StatusCode != http.StatusUnauthorized {
+		return fmt.Errorf("unexpected status code: %d", resp.StatusCode)
+	}
+
+	if resp.StatusCode != http.StatusOK {
+		body, err := io.ReadAll(resp.Body)
+		if err != nil {
+			return err
+		}
+
+		return prompts.FromBody(body)
+	}
+
+	stream := prompts.NewStream[*prompts.ChatCompletionResponse](prompts.NewDecoder(resp), err)
 
 	for stream.Next() {
-		data := stream.Current()
-		fmt.Print(data.Choices[0].Delta.Content)
+		if stream.Error() != nil {
+			return stream.Error()
+		}
+
+		res <- stream.Current()
 	}
 
 	return nil

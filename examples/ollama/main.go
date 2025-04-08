@@ -6,17 +6,17 @@ import (
 	"os"
 
 	"github.com/katallaxie/prompts"
-	"github.com/katallaxie/prompts/perplexity"
+	"github.com/katallaxie/prompts/ollama"
 )
 
 // This example demonstrates how to create a completion request with a message
 // It then sends the request to the API and prints the last completion content.
 func main() {
-	client := perplexity.New(perplexity.WithApiKey(os.Getenv("PPLX_API_KEY")))
+	client := ollama.New()
 	msg := []prompts.ChatCompletionMessage{
 		{
 			Role:    "system",
-			Content: "You are a helpful assistant. You start every answers with 'Sure!'",
+			Content: "You are a helpful assistant. You use emojies to add some fun to your responses.",
 		},
 		{
 			Role:    "user",
@@ -24,14 +24,16 @@ func main() {
 		},
 	}
 
-	req := perplexity.NewStreamCompletionRequest()
+	req := ollama.NewStreamCompletionRequest()
 	req.AddMessages(msg...)
 
 	stream := make(chan *prompts.ChatCompletionResponse, 1)
 
 	go func() {
 		for msg := range stream {
-			fmt.Print(msg)
+			for _, choice := range msg.Choices {
+				fmt.Print(choice)
+			}
 		}
 	}()
 

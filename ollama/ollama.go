@@ -1,127 +1,263 @@
 package ollama
 
 import (
+	"bufio"
+	"bytes"
 	"context"
 	"encoding/json"
+	"fmt"
+	"io"
 	"net/http"
-	"net/url"
 	"time"
 
-	"github.com/ollama/ollama/api"
-
-	"github.com/katallaxie/pkg/conv"
+	"github.com/katallaxie/pkg/cast"
 	"github.com/katallaxie/prompts"
+	"github.com/ollama/ollama/format"
 )
+
+// StreamResponse is the response from the Ollama API.
+//
+// Example:
+//
+//	{
+//			"model": "llama3.2",
+//			"created_at": "2023-08-04T08:52:19.385406455-07:00",
+//			"message": {
+//			"role": "assistant",
+//	 	"content": "The",
+//	 	"images": null
+//		},
+//		"done": false
+//	}
+type StreamResponse struct {
+	Model     string `json:"model"`
+	CreatedAt string `json:"created_at"`
+	Message   struct {
+		Role    string `json:"role"`
+		Content string `json:"content"`
+		Images  []struct {
+			URL  string `json:"url"`
+			Size int    `json:"size"`
+		} `json:"images"`
+	} `json:"message"`
+	Done bool `json:"done"`
+}
+
+// DefaultURL is the default endpoint for the Ollama API.
+const DefaultURL = "http://localhost:7869/api/chat"
+
+// DefaultTimeout is the default timeout for the Ollama API.
+const DefaultTimeout = 30 * time.Second
+
+// DefaultModel is the default model for the Ollama API.
+const DefaultModel = "smollm"
+
+// NewChatCompletionRequest creates a new chat completion request
+func NewChatCompletionRequest() *prompts.ChatCompletionRequest {
+	return &prompts.ChatCompletionRequest{
+		Model:    DefaultModel,
+		Messages: []prompts.ChatCompletionMessage{},
+		Stream:   cast.Ptr(false),
+	}
+}
+
+// NewStreamCompletionRequest creates a new chat stream completion request
+func NewStreamCompletionRequest() *prompts.ChatCompletionRequest {
+	return &prompts.ChatCompletionRequest{
+		Model:    DefaultModel,
+		Messages: []prompts.ChatCompletionMessage{},
+		Stream:   cast.Ptr(true),
+	}
+}
 
 // Opts ...
 type Opts struct {
 	// BaseURL is the base URL.
 	BaseURL string `json:"base_url"`
+	// ApiKey is the API key.
+	ApiKey string `json:"api_key"`
 	// Timeout is the timeout.
 	Timeout time.Duration `json:"timeout"`
-	// Model is the model.
-	Model string `json:"model"`
 	// Client is the HTTP client.
 	Client *http.Client `json:"-"`
-	// Format is the format.
-	Format json.RawMessage `json:"format"`
-	// KeepAlive is the keep alive.
-	KeepAlive bool `json:"keep_alive"`
-	// Options is the options.
-	Opts *api.Options `json:"options"`
 }
 
 // Opt ...
 type Opt func(*Opts)
 
-// Defaults ...
-func Defaults() *Opts {
-	return &Opts{}
+// WithURL configures the base URL.
+func WithURL(url string) Opt {
+	return func(o *Opts) {
+		o.BaseURL = url
+	}
 }
 
-var _ prompts.Promptable = (*Ollama)(nil)
+// WithApiKey configures the API key.
+func WithApiKey(apiKey string) Opt {
+	return func(o *Opts) {
+		o.ApiKey = apiKey
+	}
+}
 
-// Ollama is a chat model.
-type Ollama struct {
-	client *api.Client
-	opts   *Opts
+// WithClient configures the HTTP client.
+func WithClient(client *http.Client) Opt {
+	return func(o *Opts) {
+		o.Client = client
+	}
+}
+
+// WithTimeout configures the timeout.
+func WithTimeout(timeout time.Duration) Opt {
+	return func(o *Opts) {
+		o.Client.Timeout = timeout
+	}
 }
 
 // WithBaseURL configures the base URL.
-func WithBaseURL(baseURL string) Opt {
+func WithBaseURL(url string) Opt {
 	return func(o *Opts) {
-		o.BaseURL = baseURL
+		o.BaseURL = url
 	}
 }
 
-// WithModel configures the model.
-func WithModel(model string) Opt {
-	return func(o *Opts) {
-		o.Model = model
+// Defaults is the default options.
+func Defaults() *Opts {
+	return &Opts{
+		BaseURL: DefaultURL,
+		Timeout: DefaultTimeout,
+		Client:  &http.Client{},
 	}
+}
+
+// Ollama is a chat model.
+type Ollama struct {
+	opts *Opts
 }
 
 // New returns a new Ollama.
-func New(opts ...Opt) (*Ollama, error) {
+func New(opts ...Opt) *Ollama {
 	options := Defaults()
-
-	client := &http.Client{Timeout: options.Timeout}
-	options.Client = client
 
 	for _, opt := range opts {
 		opt(options)
 	}
 
-	baseURL, err := url.Parse(options.BaseURL)
+	p := new(Ollama)
+	p.opts = options
+
+	return p
+}
+
+// SendCompletionRequest sends a completion request to the Perplexity API.
+func (o *Ollama) SendCompletionRequest(ctx context.Context, req *prompts.ChatCompletionRequest) (*prompts.ChatCompletionResponse, error) {
+	res := &prompts.ChatCompletionResponse{}
+
+	b, err := json.Marshal(req)
 	if err != nil {
 		return nil, err
 	}
 
-	model := new(Ollama)
-	model.client = api.NewClient(baseURL, options.Client)
-	model.opts = options
+	r, err := http.NewRequestWithContext(ctx, http.MethodPost, o.opts.BaseURL, bytes.NewBuffer(b))
+	if err != nil {
+		return nil, err
+	}
 
-	return model, nil
+	r.Header.Set("Content-Type", "application/json")
+	r.Header.Set("Accept", "application/json")
+
+	resp, err := o.opts.Client.Do(r)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("unexpected status code: %d", resp.StatusCode)
+	}
+
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, err
+	}
+
+	err = json.Unmarshal(body, res)
+	if err != nil {
+		return nil, err
+	}
+
+	return res, nil
 }
 
-// Complete completes the prompt.
-func (o *Ollama) Complete(ctx context.Context, prompt *prompts.Prompt) (chan any, error) {
-	out := make(chan any)
+const maxBufferSize = 512 * format.KiloByte
 
-	req := &api.ChatRequest{
-		Model: conv.String(prompt.Model),
+// SendStreamCompletionRequest sends a streamed completion request to the Ollama.
+// nolint:gocyclo
+func (o *Ollama) SendStreamCompletionRequest(ctx context.Context, req *prompts.ChatCompletionRequest, res chan<- *prompts.ChatCompletionResponse) error {
+	defer close(res)
+
+	b, err := json.Marshal(req)
+	if err != nil {
+		return err
 	}
 
-	for _, msg := range prompt.Messages {
-		req.Messages = append(req.Messages, api.Message{
-			Role:    conv.String(msg.GetRole()),
-			Content: msg.GetContent(),
-		})
+	r, err := http.NewRequestWithContext(ctx, http.MethodPost, o.opts.BaseURL, bytes.NewBuffer(b))
+	if err != nil {
+		return err
 	}
 
-	go func() {
-		defer close(out)
+	r.Header.Set("Content-Type", "application/json")
+	r.Header.Set("Accept", "text/event-stream")
+	r.Header.Set("Connection", "keep-alive")
 
-		fn := func(res api.ChatResponse) error {
-			complete := prompts.Completion{
-				Choices: []prompts.CompletionChoice{
-					{
-						Message: &prompts.GenericMessage{
-							Role:    prompts.Role(res.Message.Role),
-							Content: res.Message.Content,
-						},
-					},
-				},
-				Model: prompts.Model(res.Model),
-			}
+	resp, err := o.opts.Client.Do(r)
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
 
-			out <- complete
+	if resp.StatusCode != http.StatusOK && resp.StatusCode != http.StatusUnauthorized {
+		return fmt.Errorf("unexpected status code: %d", resp.StatusCode)
+	}
 
-			return nil
+	if resp.StatusCode != http.StatusOK {
+		body, err := io.ReadAll(resp.Body)
+		if err != nil {
+			return err
 		}
 
-		_ = o.client.Chat(ctx, req, fn)
-	}()
+		return prompts.FromBody(body)
+	}
 
-	return out, nil
+	scanner := bufio.NewScanner(resp.Body)
+	scanBuf := make([]byte, 0, maxBufferSize)
+	scanner.Buffer(scanBuf, maxBufferSize)
+
+	for scanner.Scan() {
+		stream := &StreamResponse{}
+
+		bts := scanner.Bytes()
+		if err := json.Unmarshal(bts, &stream); err != nil {
+			return fmt.Errorf("unmarshal: %w", err)
+		}
+
+		if len(bts) == 0 {
+			continue
+		}
+
+		msg := &prompts.ChatCompletionResponse{
+			Model: stream.Model,
+			Choices: []prompts.ChatCompletionChoice{
+				{
+					Message: prompts.Index{
+						Role:    prompts.Role(stream.Message.Role),
+						Content: stream.Message.Content,
+					},
+				},
+			},
+		}
+
+		res <- msg
+	}
+
+	return nil
 }
