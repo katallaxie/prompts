@@ -197,15 +197,11 @@ func (p *Perplexity) SendStreamCompletionRequest(ctx context.Context, req *promp
 		return prompts.FromBody(body)
 	}
 
-	stream := prompts.NewStream[*prompts.ChatCompletionResponse](prompts.NewDecoder(resp), err)
+	stream := prompts.NewStream(NewDecoder(resp), Transformer)
 
-	for stream.Next() {
-		if stream.Error() != nil {
-			return stream.Error()
-		}
-
-		res <- stream.Current()
+	for msg := range stream.Next() {
+		res <- msg
 	}
 
-	return nil
+	return stream.Error()
 }

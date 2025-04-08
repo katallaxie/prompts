@@ -1,7 +1,6 @@
 package ollama
 
 import (
-	"bufio"
 	"bytes"
 	"context"
 	"encoding/json"
@@ -12,36 +11,7 @@ import (
 
 	"github.com/katallaxie/pkg/cast"
 	"github.com/katallaxie/prompts"
-	"github.com/ollama/ollama/format"
 )
-
-// StreamResponse is the response from the Ollama API.
-//
-// Example:
-//
-//	{
-//			"model": "llama3.2",
-//			"created_at": "2023-08-04T08:52:19.385406455-07:00",
-//			"message": {
-//			"role": "assistant",
-//	 	"content": "The",
-//	 	"images": null
-//		},
-//		"done": false
-//	}
-type StreamResponse struct {
-	Model     string `json:"model"`
-	CreatedAt string `json:"created_at"`
-	Message   struct {
-		Role    string `json:"role"`
-		Content string `json:"content"`
-		Images  []struct {
-			URL  string `json:"url"`
-			Size int    `json:"size"`
-		} `json:"images"`
-	} `json:"message"`
-	Done bool `json:"done"`
-}
 
 // DefaultURL is the default endpoint for the Ollama API.
 const DefaultURL = "http://localhost:7869/api/chat"
@@ -188,8 +158,6 @@ func (o *Ollama) SendCompletionRequest(ctx context.Context, req *prompts.ChatCom
 	return res, nil
 }
 
-const maxBufferSize = 512 * format.KiloByte
-
 // SendStreamCompletionRequest sends a streamed completion request to the Ollama.
 // nolint:gocyclo
 func (o *Ollama) SendStreamCompletionRequest(ctx context.Context, req *prompts.ChatCompletionRequest, res chan<- *prompts.ChatCompletionResponse) error {
@@ -228,36 +196,11 @@ func (o *Ollama) SendStreamCompletionRequest(ctx context.Context, req *prompts.C
 		return prompts.FromBody(body)
 	}
 
-	scanner := bufio.NewScanner(resp.Body)
-	scanBuf := make([]byte, 0, maxBufferSize)
-	scanner.Buffer(scanBuf, maxBufferSize)
+	stream := prompts.NewStream(NewDecoder(resp), Transformer)
 
-	for scanner.Scan() {
-		stream := &StreamResponse{}
-
-		bts := scanner.Bytes()
-		if err := json.Unmarshal(bts, &stream); err != nil {
-			return fmt.Errorf("unmarshal: %w", err)
-		}
-
-		if len(bts) == 0 {
-			continue
-		}
-
-		msg := &prompts.ChatCompletionResponse{
-			Model: stream.Model,
-			Choices: []prompts.ChatCompletionChoice{
-				{
-					Message: prompts.Index{
-						Role:    prompts.Role(stream.Message.Role),
-						Content: stream.Message.Content,
-					},
-				},
-			},
-		}
-
+	for msg := range stream.Next() {
 		res <- msg
 	}
 
-	return nil
+	return stream.Error()
 }

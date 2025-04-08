@@ -16,7 +16,7 @@ func main() {
 	msg := []prompts.ChatCompletionMessage{
 		{
 			Role:    "system",
-			Content: "You are a helpful assistant. You use emojies to add some fun to your responses.",
+			Content: "You are a helpful assistant. You start every answers with 'Sure!'",
 		},
 		{
 			Role:    "user",
@@ -31,9 +31,7 @@ func main() {
 
 	go func() {
 		for msg := range stream {
-			for _, choice := range msg.Choices {
-				fmt.Print(choice)
-			}
+			fmt.Print(msg)
 		}
 	}()
 
