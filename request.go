@@ -6,6 +6,23 @@ import (
 	"github.com/katallaxie/pkg/utilx"
 )
 
+// Role is the role of the message sender
+type Role string
+
+// Available roles
+const (
+	// RoleUser is the user role
+	RoleUser Role = "user"
+	// RoleAssistant is the assistant role
+	RoleAssistant Role = "assistant"
+	// RoleSystem is the system role
+	RoleSystem Role = "system"
+	// RoleFunction is the function role
+	RoleFunction Role = "function"
+	// RoleNone is the none role
+	RoleNone Role = ""
+)
+
 // ChatCompletionMessage is the message for chat completion
 type ChatCompletionMessage struct {
 	// Role is the role of the message sender
