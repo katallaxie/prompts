@@ -12,7 +12,7 @@ import (
 	"github.com/katallaxie/prompts"
 )
 
-// Event ...
+// Event is the structure of the event stream response from the Ollama API.
 type Event struct {
 	Model     string `json:"model"`
 	CreatedAt string `json:"created_at"`
@@ -27,6 +27,7 @@ type Event struct {
 	Done bool `json:"done"`
 }
 
+// Transformer is a function that transforms an Event into a ChatCompletionResponse.
 var Transformer = func(e Event) (*prompts.ChatCompletionResponse, error) {
 	return &prompts.ChatCompletionResponse{
 		Model: e.Model,
