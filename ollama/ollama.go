@@ -9,7 +9,6 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/katallaxie/pkg/cast"
 	"github.com/katallaxie/prompts"
 )
 
@@ -21,24 +20,6 @@ const DefaultTimeout = 30 * time.Second
 
 // DefaultModel is the default model for the Ollama API.
 const DefaultModel = "smollm"
-
-// NewChatCompletionRequest creates a new chat completion request
-func NewChatCompletionRequest() *prompts.ChatCompletionRequest {
-	return &prompts.ChatCompletionRequest{
-		Model:    DefaultModel,
-		Messages: []prompts.ChatCompletionMessage{},
-		Stream:   cast.Ptr(false),
-	}
-}
-
-// NewStreamCompletionRequest creates a new chat stream completion request
-func NewStreamCompletionRequest() *prompts.ChatCompletionRequest {
-	return &prompts.ChatCompletionRequest{
-		Model:    DefaultModel,
-		Messages: []prompts.ChatCompletionMessage{},
-		Stream:   cast.Ptr(true),
-	}
-}
 
 // Opts ...
 type Opts struct {

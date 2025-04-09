@@ -24,7 +24,8 @@ func main() {
 		},
 	}
 
-	req := perplexity.NewStreamCompletionRequest()
+	req := prompts.NewStreamChatCompletionRequest()
+	req.SetModel(perplexity.DefaultModel)
 	req.AddMessages(msg...)
 
 	err := client.SendStreamCompletionRequest(context.Background(), req, prompts.Print)

@@ -24,7 +24,8 @@ func main() {
 		},
 	}
 
-	req := ollama.NewStreamCompletionRequest()
+	req := prompts.NewStreamChatCompletionRequest()
+	req.SetModel(ollama.DefaultModel)
 	req.AddMessages(msg...)
 
 	err := client.SendStreamCompletionRequest(context.Background(), req, prompts.Print)

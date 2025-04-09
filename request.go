@@ -49,6 +49,18 @@ type ChatCompletionRequest struct {
 	TopK *int `json:"top_k,omitzero"`
 }
 
+// NewChatCompletionRequest creates a new chat completion request
+func NewChatCompletionRequest() *ChatCompletionRequest {
+	return &ChatCompletionRequest{}
+}
+
+// NewStreamChatCompletionRequest creates a new chat completion request with streaming enabled
+func NewStreamChatCompletionRequest() *ChatCompletionRequest {
+	return &ChatCompletionRequest{
+		Stream: cast.Ptr(true),
+	}
+}
+
 // SetModel sets the model for the chat completion request
 func (r *ChatCompletionRequest) SetModel(model string) {
 	r.Model = model
