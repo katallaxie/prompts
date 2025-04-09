@@ -201,14 +201,5 @@ func (p *Perplexity) SendStreamCompletionRequest(ctx context.Context, req *promp
 	stream := prompts.NewStream(NewDecoder(resp), Transformer)
 	defer stream.Close()
 
-	for msg := range stream.Next() {
-		for _, f := range cb {
-			err := f(msg)
-			if err != nil {
-				return err
-			}
-		}
-	}
-
-	return stream.Error()
+	return prompts.Events(stream.All(), cb...)
 }

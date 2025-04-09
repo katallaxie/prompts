@@ -5,13 +5,6 @@ import (
 	"iter"
 )
 
-// Print is a function that prints the event.
-func Print(res *ChatCompletionResponse) error {
-	fmt.Print(res)
-
-	return nil
-}
-
 // Decoder is an interface for decoding SSE streams.
 type Decoder[E any] interface {
 	// Close closes the decoder.
@@ -25,52 +18,77 @@ type Decoder[E any] interface {
 // Transformer is a function that transforms an event into a different type.
 type Transformer[E any, T any] func(E) (T, error)
 
+// Stream is the interface for a stream of events.
+type Stream[E any, T any] interface {
+	// All returns all events.
+	All() iter.Seq2[T, error]
+	// Close closes the stream.
+	Close() error
+}
+
 // Stream is a stream of events.
-type Stream[E any, T any] struct {
+type stream[E any, T any] struct {
 	decoder     Decoder[E]
 	transformer Transformer[E, T]
-	err         error
 }
 
 // NewStream creates a new stream from the given decoder and error.
-func NewStream[E any, T any](decoder Decoder[E], transformer Transformer[E, T]) *Stream[E, T] {
-	return &Stream[E, T]{
+func NewStream[E any, T any](decoder Decoder[E], transformer Transformer[E, T]) Stream[E, T] {
+	return &stream[E, T]{
 		transformer: transformer,
 		decoder:     decoder,
 	}
 }
 
-// Scan returns a sequence of events.
-func (s *Stream[E, T]) Next() iter.Seq[T] {
-	return func(yield func(T) bool) {
+// All returns all events.
+func (s *stream[E, T]) All() iter.Seq2[T, error] {
+	return func(yield func(T, error) bool) {
 		for e := range s.decoder.All() {
-			msg, err := s.transformer(e)
-			if err != nil {
-				s.err = err
+			if !yield(s.transformer(e)) {
 				break
 			}
-
-			if !yield(msg) {
-				break
-			}
-		}
-
-		if s.decoder.Error() != nil {
-			s.err = s.decoder.Error()
 		}
 	}
 }
 
-// Err returns the error if any occurred during streaming.
-func (s *Stream[E, T]) Error() error {
-	return s.err
-}
-
 // Done returns true if the stream has ended.
-func (s *Stream[E, T]) Close() error {
+func (s *stream[E, T]) Close() error {
 	if s.decoder == nil {
 		return nil
 	}
 
 	return s.decoder.Close()
+}
+
+// Callbacks is an interfactor for a callback function.
+func Callbacks[T any](v T, cb ...func(T) error) error {
+	for _, c := range cb {
+		if err := c(v); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+// Events is a function that returns the events.
+func Events[T any](stream iter.Seq2[T, error], cb ...func(T) error) error {
+	for msg, err := range stream {
+		if err != nil {
+			return err
+		}
+
+		if err := Callbacks(msg, cb...); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+// Print is a function that prints the event.
+func Print(res *ChatCompletionResponse) error {
+	fmt.Print(res)
+
+	return nil
 }

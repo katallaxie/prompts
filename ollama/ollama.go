@@ -199,14 +199,5 @@ func (o *Ollama) SendStreamCompletionRequest(ctx context.Context, req *prompts.C
 	stream := prompts.NewStream(NewDecoder(resp), Transformer)
 	defer stream.Close()
 
-	for msg := range stream.Next() {
-		for _, f := range cb {
-			err := f(msg)
-			if err != nil {
-				return err
-			}
-		}
-	}
-
-	return stream.Error()
+	return prompts.Events(stream.All(), cb...)
 }
