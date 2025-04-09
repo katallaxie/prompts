@@ -54,7 +54,7 @@ type eventStreamDecoder struct {
 }
 
 // Next returns a sequence of events.
-func (s *eventStreamDecoder) Next() iter.Seq[Event] {
+func (s *eventStreamDecoder) All() iter.Seq[Event] {
 	return func(yield func(Event) bool) {
 		for s.scn.Scan() {
 			event := cast.Zero[Event]()

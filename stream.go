@@ -18,8 +18,8 @@ type Decoder[E any] interface {
 	Close() error
 	// Error returns the error if any occurred during decoding.
 	Error() error
-	// Next returns true if there is a next event.
-	Next() iter.Seq[E]
+	// All returns all events.
+	All() iter.Seq[E]
 }
 
 // Transformer is a function that transforms an event into a different type.
@@ -43,7 +43,7 @@ func NewStream[E any, T any](decoder Decoder[E], transformer Transformer[E, T]) 
 // Scan returns a sequence of events.
 func (s *Stream[E, T]) Next() iter.Seq[T] {
 	return func(yield func(T) bool) {
-		for e := range s.decoder.Next() {
+		for e := range s.decoder.All() {
 			msg, err := s.transformer(e)
 			if err != nil {
 				s.err = err
