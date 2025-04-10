@@ -11,7 +11,7 @@ tool (
 	mvdan.cc/gofumpt
 )
 
-require github.com/katallaxie/pkg v0.7.3
+require github.com/katallaxie/pkg v0.7.5
 
 require (
 	4d63.com/gocheckcompilerdirectives v1.3.0 // indirect
