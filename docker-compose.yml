@@ -1,9 +1,7 @@
 services:
 
   ollama:
-    build:
-      dockerfile: ./.devcontainer/Dockerfile.dev
-    image: ollama
+    image: docker.io/ollama/ollama:latest
     ports:
       - 7869:11434
     volumes:
