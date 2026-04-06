@@ -85,7 +85,7 @@ type Perplexity struct {
 	opts *Opts
 }
 
-var _ prompts.Chat = (*Perplexity)(nil)
+var _ prompts.Prompt = (*Perplexity)(nil)
 
 // New returns a new Perplexity.
 func New(opts ...Opt) *Perplexity {

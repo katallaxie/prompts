@@ -85,7 +85,7 @@ type Ollama struct {
 	opts *Opts
 }
 
-var _ prompts.Chat = (*Ollama)(nil)
+var _ prompts.Prompt = (*Ollama)(nil)
 
 // New returns a new Ollama.
 func New(opts ...Opt) *Ollama {
