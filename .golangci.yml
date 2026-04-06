@@ -77,7 +77,7 @@ linters:
       case:
         rules:
           bson: goCamel
-          json: goCamel
+          json: snake
           xml: goCamel
           yaml: goCamel
 

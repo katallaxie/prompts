@@ -6,32 +6,32 @@ import (
 	"github.com/katallaxie/pkg/utilx"
 )
 
-// Role is the role of the message sender
+// Role is the role of the message sender.
 type Role string
 
-// Available roles
+// Available roles.
 const (
-	// RoleUser is the user role
+	// RoleUser is the user role.
 	RoleUser Role = "user"
-	// RoleAssistant is the assistant role
+	// RoleAssistant is the assistant role.
 	RoleAssistant Role = "assistant"
-	// RoleSystem is the system role
+	// RoleSystem is the system role.
 	RoleSystem Role = "system"
-	// RoleFunction is the function role
+	// RoleFunction is the function role.
 	RoleFunction Role = "function"
-	// RoleNone is the none role
+	// RoleNone is the none role.
 	RoleNone Role = ""
 )
 
-// ChatCompletionMessage is the message for chat completion
+// ChatCompletionMessage is the message for chat completion.
 type ChatCompletionMessage struct {
-	// Role is the role of the message sender
+	// Role is the role of the message sender.
 	Role Role `json:"role"`
-	// Content is the content of the message
+	// Content is the content of the message.
 	Content string `json:"content"`
 }
 
-// ChatCompletionRequest is the request for chat completion
+// ChatCompletionRequest is the request for chat completion.
 type ChatCompletionRequest struct {
 	// Model is the model name
 	Model string `json:"model"`
@@ -49,65 +49,65 @@ type ChatCompletionRequest struct {
 	TopK *int `json:"top_k,omitzero"`
 }
 
-// NewChatCompletionRequest creates a new chat completion request
+// NewChatCompletionRequest creates a new chat completion request.
 func NewChatCompletionRequest() *ChatCompletionRequest {
 	return &ChatCompletionRequest{}
 }
 
-// NewStreamChatCompletionRequest creates a new chat completion request with streaming enabled
+// NewStreamChatCompletionRequest creates a new chat completion request with streaming enabled.
 func NewStreamChatCompletionRequest() *ChatCompletionRequest {
 	return &ChatCompletionRequest{
 		Stream: cast.Ptr(true),
 	}
 }
 
-// SetModel sets the model for the chat completion request
+// SetModel sets the model for the chat completion request.
 func (r *ChatCompletionRequest) SetModel(model string) {
 	r.Model = model
 }
 
-// AddMessage adds a message to the chat completion request
+// AddMessage adds a message to the chat completion request.
 func (r *ChatCompletionRequest) AddMessages(msg ...ChatCompletionMessage) {
 	r.Messages = slices.Append(r.Messages, msg...)
 }
 
-// SetMessages sets the messages for the chat completion request
+// SetMessages sets the messages for the chat completion request.
 func (r *ChatCompletionRequest) SetMessages(msg []ChatCompletionMessage) {
 	r.Messages = msg
 }
 
-// SetMaxTokens sets the maximum number of tokens for the chat completion request
+// SetMaxTokens sets the maximum number of tokens for the chat completion request.
 func (r *ChatCompletionRequest) SetMaxTokens(maxTokens int) {
 	r.MaxTokens = cast.Ptr(maxTokens)
 }
 
-// SetTemperature sets the temperature for the chat completion request
+// SetTemperature sets the temperature for the chat completion request.
 func (r *ChatCompletionRequest) SetTemperature(temperature float32) {
 	r.Temperature = cast.Ptr(temperature)
 }
 
-// SetTopP sets the top P for the chat completion request
+// SetTopP sets the top P for the chat completion request.
 func (r *ChatCompletionRequest) SetTopP(topP float64) {
 	r.TopP = cast.Ptr(topP)
 }
 
-// SetTopK sets the top K for the chat completion request
+// SetTopK sets the top K for the chat completion request.
 func (r *ChatCompletionRequest) SetTopK(topK int) {
 	r.TopK = cast.Ptr(topK)
 }
 
-// SetStream sets the stream flag for the chat completion request
+// SetStream sets the stream flag for the chat completion request.
 func (r *ChatCompletionRequest) SetStream(stream bool) {
 	r.Stream = cast.Ptr(stream)
 }
 
-// Index is the index for the chat completion
+// Index is the index for the chat completion.
 type Index struct {
 	Role    Role   `json:"role"`
 	Content string `json:"content"`
 }
 
-// ChatCompletionChoice is the choice for chat completion
+// ChatCompletionChoice is the choice for chat completion.
 type ChatCompletionChoice struct {
 	// Message is the message for the choice
 	Message Index `json:"message,omitempty"`
@@ -119,7 +119,7 @@ type ChatCompletionChoice struct {
 	Index uint `json:"index,omitempty"`
 }
 
-// String returns the string representation of the choice
+// String returns the string representation of the choice.
 func (c ChatCompletionChoice) String() string {
 	if utilx.NotEmpty(c.Delta.Content) {
 		return c.Delta.Content

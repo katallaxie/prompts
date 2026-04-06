@@ -33,7 +33,7 @@ type stream[E any, T any] struct {
 }
 
 // NewStream creates a new stream from the given decoder and error.
-func NewStream[E any, T any](decoder Decoder[E], transformer Transformer[E, T]) Stream[E, T] {
+func NewStream[E, T any](decoder Decoder[E], transformer Transformer[E, T]) Stream[E, T] {
 	return &stream[E, T]{
 		transformer: transformer,
 		decoder:     decoder,
