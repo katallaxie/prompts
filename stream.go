@@ -1,7 +1,6 @@
 package prompts
 
 import (
-	"fmt"
 	"iter"
 )
 
@@ -82,13 +81,6 @@ func Events[T any](stream iter.Seq2[T, error], cb ...func(T) error) error {
 			return err
 		}
 	}
-
-	return nil
-}
-
-// Print is a function that prints the event.
-func Print(res *ChatCompletionResponse) error {
-	fmt.Print(res)
 
 	return nil
 }

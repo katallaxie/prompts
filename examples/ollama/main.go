@@ -6,6 +6,7 @@ import (
 	"os"
 
 	"github.com/katallaxie/prompts"
+	"github.com/katallaxie/prompts/callbacks"
 	"github.com/katallaxie/prompts/ollama"
 )
 
@@ -28,7 +29,7 @@ func main() {
 	req.SetModel(ollama.DefaultModel)
 	req.AddMessages(msg...)
 
-	err := client.SendStreamCompletionRequest(context.Background(), req, prompts.Print)
+	err := client.SendStreamCompletionRequest(context.Background(), req, callbacks.Print)
 	if err != nil {
 		fmt.Printf("Error: %v\n", err)
 		os.Exit(1)
