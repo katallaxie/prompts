@@ -6,7 +6,6 @@ import (
 	"encoding/json"
 	"io"
 	"iter"
-	"net/http"
 
 	"github.com/katallaxie/pkg/cast"
 	"github.com/katallaxie/pkg/utilx"
@@ -35,16 +34,16 @@ var Transformer = func(e Event) (*prompts.ChatCompletionResponse, error) {
 const maxBufferSize = 512 * 1 * 1000
 
 // NewDecoder creates a new Decoder based on the content type of the response.
-func NewDecoder(res *http.Response) prompts.Decoder[Event] {
-	if utilx.Or(utilx.Empty(res), utilx.Empty(res.Body)) {
+func NewDecoder(body io.ReadCloser) prompts.Decoder[Event] {
+	if utilx.Empty(body) {
 		return nil
 	}
 
-	scanner := bufio.NewScanner(res.Body)
+	scanner := bufio.NewScanner(body)
 	buf := make([]byte, 0, maxBufferSize)
 	scanner.Buffer(buf, maxBufferSize)
 
-	return &eventStreamDecoder{rc: res.Body, scn: scanner}
+	return &eventStreamDecoder{rc: body, scn: scanner}
 }
 
 type eventStreamDecoder struct {

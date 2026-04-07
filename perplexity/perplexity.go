@@ -178,7 +178,7 @@ func (p *Perplexity) SendStreamCompletionRequest(ctx context.Context, req *promp
 		return prompts.FromBody(body)
 	}
 
-	stream := prompts.NewStream(NewDecoder(resp), Transformer)
+	stream := prompts.NewStream(NewDecoder(resp.Body), Transformer)
 	defer stream.Close()
 
 	return prompts.Events(stream.All(), cb...)
