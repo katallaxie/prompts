@@ -33,7 +33,7 @@ type Opts struct {
 	Client *http.Client `json:"-"`
 }
 
-// Opt ...
+// Opt is a function that configures the options.
 type Opt func(*Opts)
 
 // WithURL configures the base URL.
@@ -143,8 +143,6 @@ func (p *Perplexity) SendCompletionRequest(ctx context.Context, req *prompts.Cha
 }
 
 // SendStreamCompletionRequest sends a streamed completion request to the Perplexity API.
-//
-//nolint:gocyclo
 func (p *Perplexity) SendStreamCompletionRequest(ctx context.Context, req *prompts.ChatCompletionRequest, cb ...func(res *prompts.ChatCompletionResponse) error) error {
 	b, err := json.Marshal(req)
 	if err != nil {

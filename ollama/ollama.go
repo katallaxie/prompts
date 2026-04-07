@@ -142,8 +142,6 @@ func (o *Ollama) SendCompletionRequest(ctx context.Context, req *prompts.ChatCom
 }
 
 // SendStreamCompletionRequest sends a streamed completion request to the Ollama.
-//
-//nolint:gocyclo
 func (o *Ollama) SendStreamCompletionRequest(ctx context.Context, req *prompts.ChatCompletionRequest, cb ...func(res *prompts.ChatCompletionResponse) error) error {
 	b, err := json.Marshal(req)
 	if err != nil {
