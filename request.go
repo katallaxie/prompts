@@ -29,6 +29,8 @@ type ChatCompletionMessage struct {
 	Role Role `json:"role"`
 	// Content is the content of the message.
 	Content string `json:"content"`
+	// ToolCalls is the tool call for the message.
+	ToolCalls []ToolCall `json:"tool_calls,omitempty"`
 }
 
 // ChatCompletionRequest is the request for chat completion.
@@ -47,6 +49,8 @@ type ChatCompletionRequest struct {
 	TopP *float64 `json:"top_p,omitzero"`
 	// TopK is the number of top tokens to sample from
 	TopK *int `json:"top_k,omitzero"`
+	// Tools is the list of tools to use for the chat completion
+	Tools []Tool `json:"tools,omitempty"`
 }
 
 // NewChatCompletionRequest creates a new chat completion request.
