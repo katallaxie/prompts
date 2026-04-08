@@ -16,11 +16,11 @@ func main() {
 	client := ollama.New()
 	msg := []prompts.ChatCompletionMessage{
 		{
-			Role:    "system",
+			Role:    prompts.RoleSystem,
 			Content: "You are a helpful assistant. You start every answers with 'Sure!'",
 		},
 		{
-			Role:    "user",
+			Role:    prompts.RoleUser,
 			Content: "What is the definition of Pi?",
 		},
 	}

@@ -16,11 +16,11 @@ func main() {
 	client := perplexity.New(perplexity.WithApiKey(os.Getenv("PPLX_API_KEY")))
 	msg := []prompts.ChatCompletionMessage{
 		{
-			Role:    "system",
-			Content: "You are a helpful assistant. You start every answers with 'Sure!'",
+			Role:    prompts.RoleSystem,
+			Content: "You are a helpful assistant. You start every answer with 'Sure my lord!'",
 		},
 		{
-			Role:    "user",
+			Role:    prompts.RoleUser,
 			Content: "What is the definition of Pi?",
 		},
 	}
