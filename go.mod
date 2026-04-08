@@ -10,7 +10,7 @@ tool (
 	mvdan.cc/gofumpt
 )
 
-require github.com/katallaxie/pkg v0.7.10
+require github.com/katallaxie/pkg v0.7.11
 
 require (
 	4d63.com/gocheckcompilerdirectives v1.3.0 // indirect
@@ -197,7 +197,7 @@ require (
 	github.com/firefart/nonamedreturns v1.0.6 // indirect
 	github.com/fsnotify/fsnotify v1.9.0 // indirect
 	github.com/fzipp/gocyclo v0.6.0 // indirect
-	github.com/gabriel-vasile/mimetype v1.4.12 // indirect
+	github.com/gabriel-vasile/mimetype v1.4.13 // indirect
 	github.com/ghostiam/protogetter v0.3.20 // indirect
 	github.com/github/smimesign v0.2.0 // indirect
 	github.com/go-critic/go-critic v0.14.3 // indirect
