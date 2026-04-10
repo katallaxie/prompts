@@ -21,8 +21,6 @@ type Transformer[E any, T any] func(E) (T, error)
 type Stream[E any, T any] interface {
 	// All returns all events.
 	All() iter.Seq2[T, error]
-	// Close closes the stream.
-	Close() error
 }
 
 // Stream is a stream of events.
@@ -48,15 +46,6 @@ func (s *stream[E, T]) All() iter.Seq2[T, error] {
 			}
 		}
 	}
-}
-
-// Done returns true if the stream has ended.
-func (s *stream[E, T]) Close() error {
-	if s.decoder == nil {
-		return nil
-	}
-
-	return s.decoder.Close()
 }
 
 // Callbacks is an interfactor for a callback function.
