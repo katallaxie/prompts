@@ -4,39 +4,38 @@ import (
 	"iter"
 )
 
-// Decoder is an interface for decoding SSE streams.
-type Decoder[E any] interface {
-	// All returns all events.
+// StreamDecoder is an interface for decoding a stream of events.
+type StreamDecoder[E any] interface {
+	// All returns an iterator over all events to be decoded.
 	All() iter.Seq[E]
 }
 
-// Transformer is a function that transforms an event into a different type.
-type Transformer[E any, T any] func(E) (T, error)
+// StreamTransformer is a function that transforms an event into a different type.
+type StreamTransformer[E any, T any] func(E) (T, error)
 
 // Stream is the interface for a stream of events.
 type Stream[T any] interface {
-	// All returns all events.
+	// All returns an iterator over all events to be decoded.
 	All() iter.Seq2[T, error]
 	// Error returns the error if any occurred during decoding.
 	Error() error
 }
 
-// Stream is a stream of events.
 type stream[E any, T any] struct {
-	decoder     Decoder[E]
-	transformer Transformer[E, T]
+	decoder     StreamDecoder[E]
+	transformer StreamTransformer[E, T]
 	err         error
 }
 
 // NewStream creates a new stream from the given decoder and error.
-func NewStream[E, T any](decoder Decoder[E], transformer Transformer[E, T]) Stream[T] {
+func NewStream[E, T any](decoder StreamDecoder[E], transformer StreamTransformer[E, T]) Stream[T] {
 	return &stream[E, T]{
 		transformer: transformer,
 		decoder:     decoder,
 	}
 }
 
-// All returns all events.
+// All returns an iterator over all events to be decoded.
 func (s *stream[E, T]) All() iter.Seq2[T, error] {
 	return func(yield func(T, error) bool) {
 		for e := range s.decoder.All() {

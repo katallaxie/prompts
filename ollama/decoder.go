@@ -44,7 +44,7 @@ var Transformer = func(e Event) (*prompts.ChatCompletionResponse, error) {
 const maxBufferSize = 512 * 1 * 1000
 
 // NewDecoder creates a new Decoder based on the content type of the response.
-func NewDecoder(body io.ReadCloser) prompts.Decoder[Event] {
+func NewDecoder(body io.ReadCloser) prompts.StreamDecoder[Event] {
 	if utilx.Empty(body) {
 		return nil
 	}
@@ -62,7 +62,7 @@ type eventStreamDecoder[E any] struct {
 	err error
 }
 
-// Next returns a sequence of events.
+// All returns an iterator over all events to be decoded.
 func (s *eventStreamDecoder[E]) All() iter.Seq[E] {
 	return func(yield func(E) bool) {
 		for s.scn.Scan() {

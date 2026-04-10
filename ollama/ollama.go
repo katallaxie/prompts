@@ -163,17 +163,14 @@ func (o *Ollama) SendStreamCompletionRequest(ctx context.Context, req *prompts.C
 	}
 	defer resp.Body.Close()
 
-	if resp.StatusCode != http.StatusOK && resp.StatusCode != http.StatusUnauthorized {
-		return fmt.Errorf("unexpected status code: %d", resp.StatusCode)
-	}
-
 	if resp.StatusCode != http.StatusOK {
-		body, err := io.ReadAll(resp.Body)
+		var promptErr prompts.PromptError
+		err := json.NewDecoder(resp.Body).Decode(&promptErr)
 		if err != nil {
 			return err
 		}
 
-		return prompts.FromBody(body)
+		return &promptErr
 	}
 
 	dec := NewDecoder(resp.Body)
