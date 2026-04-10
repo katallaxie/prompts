@@ -85,7 +85,7 @@ type Perplexity struct {
 	opts *Opts
 }
 
-var _ prompts.Prompt = (*Perplexity)(nil)
+var _ prompts.Prompter = (*Perplexity)(nil)
 
 // New returns a new Perplexity.
 func New(opts ...Opt) *Perplexity {
@@ -179,8 +179,6 @@ func (p *Perplexity) SendStreamCompletionRequest(ctx context.Context, req *promp
 	}
 
 	dec := NewDecoder(resp.Body)
-	defer dec.Close()
-
 	stream := prompts.NewStream(dec, Transformer)
 
 	err = prompts.Events(stream.All(), cb...)

@@ -14,7 +14,7 @@ import (
 // It then sends the request to the API and prints the last completion content.
 func main() {
 	client := perplexity.New(perplexity.WithApiKey(os.Getenv("PPLX_API_KEY")))
-	msg := []prompts.ChatCompletionMessage{
+	msgs := []prompts.ChatCompletionMessage{
 		{
 			Role:    prompts.RoleSystem,
 			Content: "You are a helpful assistant. You start every answer with 'Sure my lord!'",
@@ -25,9 +25,8 @@ func main() {
 		},
 	}
 
-	req := prompts.NewStreamChatCompletionRequest()
+	req := prompts.NewStreamChatCompletionRequest(msgs...)
 	req.SetModel(perplexity.DefaultModel)
-	req.AddMessages(msg...)
 
 	err := client.SendStreamCompletionRequest(context.Background(), req, callbacks.Print)
 	if err != nil {

@@ -6,10 +6,6 @@ import (
 
 // Decoder is an interface for decoding SSE streams.
 type Decoder[E any] interface {
-	// Close closes the decoder.
-	Close() error
-	// Error returns the error if any occurred during decoding.
-	Error() error
 	// All returns all events.
 	All() iter.Seq[E]
 }
@@ -18,19 +14,22 @@ type Decoder[E any] interface {
 type Transformer[E any, T any] func(E) (T, error)
 
 // Stream is the interface for a stream of events.
-type Stream[E any, T any] interface {
+type Stream[T any] interface {
 	// All returns all events.
 	All() iter.Seq2[T, error]
+	// Error returns the error if any occurred during decoding.
+	Error() error
 }
 
 // Stream is a stream of events.
 type stream[E any, T any] struct {
 	decoder     Decoder[E]
 	transformer Transformer[E, T]
+	err         error
 }
 
 // NewStream creates a new stream from the given decoder and error.
-func NewStream[E, T any](decoder Decoder[E], transformer Transformer[E, T]) Stream[E, T] {
+func NewStream[E, T any](decoder Decoder[E], transformer Transformer[E, T]) Stream[T] {
 	return &stream[E, T]{
 		transformer: transformer,
 		decoder:     decoder,
@@ -46,6 +45,11 @@ func (s *stream[E, T]) All() iter.Seq2[T, error] {
 			}
 		}
 	}
+}
+
+// Error returns the error if any occurred during decoding.
+func (s *stream[E, T]) Error() error {
+	return s.err
 }
 
 // Callbacks is an interfactor for a callback function.

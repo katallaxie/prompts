@@ -85,11 +85,6 @@ func (s *eventStreamDecoder) All() iter.Seq[Event] {
 	}
 }
 
-// Close closes the decoder.
-func (s *eventStreamDecoder) Close() error {
-	return s.rc.Close()
-}
-
 // Err returns the error if any occurred during decoding.
 func (s *eventStreamDecoder) Error() error {
 	return s.err

@@ -51,6 +51,8 @@ type ChatCompletionRequest struct {
 	TopK *int `json:"top_k,omitzero"`
 	// Tools is the list of tools to use for the chat completion
 	Tools []Tool `json:"tools,omitempty"`
+	// IsStream is a flag to indicate if the request is for streaming
+	IsStream bool `json:"is_stream,omitempty"`
 }
 
 // NewChatCompletionRequest creates a new chat completion request.
@@ -59,9 +61,10 @@ func NewChatCompletionRequest() *ChatCompletionRequest {
 }
 
 // NewStreamChatCompletionRequest creates a new chat completion request with streaming enabled.
-func NewStreamChatCompletionRequest() *ChatCompletionRequest {
+func NewStreamChatCompletionRequest(msgs ...ChatCompletionMessage) *ChatCompletionRequest {
 	return &ChatCompletionRequest{
-		Stream: cast.Ptr(true),
+		Stream:   cast.Ptr(true),
+		Messages: msgs,
 	}
 }
 

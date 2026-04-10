@@ -85,7 +85,7 @@ type Ollama struct {
 	opts *Opts
 }
 
-var _ prompts.Prompt = (*Ollama)(nil)
+var _ prompts.Prompter = (*Ollama)(nil)
 
 // New returns a new Ollama.
 func New(opts ...Opt) *Ollama {
@@ -177,11 +177,14 @@ func (o *Ollama) SendStreamCompletionRequest(ctx context.Context, req *prompts.C
 	}
 
 	dec := NewDecoder(resp.Body)
-	defer dec.Close()
-
 	stream := prompts.NewStream(dec, Transformer)
 
 	err = prompts.Events(stream.All(), cb...)
+	if err != nil {
+		return err
+	}
+
+	err = stream.Error()
 	if err != nil {
 		return err
 	}
