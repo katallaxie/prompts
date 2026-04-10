@@ -1,6 +1,8 @@
 package prompts
 
-import "strings"
+import (
+	"strings"
+)
 
 // ChatCompletionResponse represents a response structure for chat completion API.
 type ChatCompletionResponse struct {
