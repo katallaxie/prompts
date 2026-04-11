@@ -1,4 +1,4 @@
-package callbacks
+package iterx
 
 import (
 	"github.com/katallaxie/pkg/logx"

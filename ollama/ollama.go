@@ -142,7 +142,7 @@ func (o *Ollama) SendCompletionRequest(ctx context.Context, req *prompts.ChatCom
 }
 
 // SendStreamCompletionRequest sends a streamed completion request to the Ollama.
-func (o *Ollama) SendStreamCompletionRequest(ctx context.Context, req *prompts.ChatCompletionRequest, cb ...func(res *prompts.ChatCompletionResponse) error) error {
+func (o *Ollama) SendStreamCompletionRequest(ctx context.Context, req *prompts.ChatCompletionRequest, iter prompts.StreamIterator) error {
 	b, err := json.Marshal(req)
 	if err != nil {
 		return err
@@ -176,12 +176,7 @@ func (o *Ollama) SendStreamCompletionRequest(ctx context.Context, req *prompts.C
 	dec := NewDecoder(resp.Body)
 	stream := prompts.NewStream(dec, Transformer)
 
-	err = prompts.Events(stream.All(), cb...)
-	if err != nil {
-		return err
-	}
-
-	err = stream.Error()
+	err = iter(stream.All())
 	if err != nil {
 		return err
 	}

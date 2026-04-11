@@ -9,5 +9,5 @@ type Prompter interface {
 	// SendCompletionRequest sends a chat completion request.
 	SendCompletionRequest(ctx context.Context, req *ChatCompletionRequest) (*ChatCompletionResponse, error)
 	// SendStreamCompletionRequest sends a chat completion request and streams the response.
-	SendStreamCompletionRequest(ctx context.Context, req *ChatCompletionRequest, cb ...func(res *ChatCompletionResponse) error) error
+	SendStreamCompletionRequest(ctx context.Context, req *ChatCompletionRequest, iter StreamIterator) error
 }
