@@ -29,6 +29,8 @@ type ChatCompletionMessage struct {
 	Role Role `json:"role"`
 	// Content is the content of the message.
 	Content string `json:"content"`
+	// Images is the list of images for the message.
+	Images []Image `json:"images,omitempty"`
 	// ToolCalls is the tool call for the message.
 	ToolCalls []ToolCall `json:"tool_calls,omitempty"`
 }
