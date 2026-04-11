@@ -14,7 +14,7 @@ func Print(stream iter.Seq2[*prompts.ChatCompletionResponse, error]) error {
 			return err
 		}
 
-		fmt.Println(msg)
+		fmt.Print(msg)
 	}
 
 	return nil
