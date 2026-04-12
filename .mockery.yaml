@@ -1,5 +1,7 @@
 inpackage: True
-with-expecter: true
 dir: mocks
+pkgname: mockss
 packages:
-testonly: True
+  github.com/katallaxie/prompts:
+    config:
+      all: True

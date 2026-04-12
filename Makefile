@@ -21,7 +21,7 @@ generate: ## Generate code.
 
 .PHONY: mocks
 mocks: ## Generate mocks.
-	$(GO_TOOL) github.com/vektra/mockery/v2
+	$(GO_TOOL) github.com/vektra/mockery/v3
 
 .PHONY: fmt
 fmt: ## Run go fmt against code.
