@@ -1,187 +1,81 @@
 package perplexity
 
 import (
+	"bufio"
 	"bytes"
-	"context"
 	"encoding/json"
-	"fmt"
 	"io"
-	"net/http"
-	"time"
+	"iter"
 
+	"github.com/katallaxie/pkg/cast"
 	"github.com/katallaxie/prompts"
 )
 
 // DefaultURL is the default endpoint for the Perplexity API.
 const DefaultURL = "https://api.perplexity.ai/chat/completions"
 
-// DefaultTimeout is the default timeout for the Perplexity API.
-const DefaultTimeout = 30 * time.Second
-
 // DefaultModel is the default model for the Perplexity API.
 const DefaultModel = "sonar-pro"
 
-// Opts ...
-type Opts struct {
-	// BaseURL is the base URL.
-	BaseURL string `json:"base_url"`
-	// ApiKey is the API key.
-	ApiKey string `json:"api_key"`
-	// Timeout is the timeout.
-	Timeout time.Duration `json:"timeout"`
-	// Client is the HTTP client.
-	Client *http.Client `json:"-"`
-}
-
-// Opt is a function that configures the options.
-type Opt func(*Opts)
-
-// WithURL configures the base URL.
-func WithURL(url string) Opt {
-	return func(o *Opts) {
-		o.BaseURL = url
+// Defaults returns the default options for the Perplexity API.
+func Defaults() []prompts.Opt[Event] {
+	return []prompts.Opt[Event]{
+		prompts.WithURL[Event](DefaultURL),
+		prompts.WithTransformer(Transformer),
+		prompts.WithDecoder(Decoder),
 	}
 }
 
-// WithApiKey configures the API key.
-func WithApiKey(apiKey string) Opt {
-	return func(o *Opts) {
-		o.ApiKey = apiKey
-	}
+// Event is the structure of the event received from the server.
+type Event struct {
+	// Type is the type of the event.
+	Type string `json:"type"`
+	// Data is the data of the event.
+	Data []byte `json:"data"`
 }
 
-// WithClient configures the HTTP client.
-func WithClient(client *http.Client) Opt {
-	return func(o *Opts) {
-		o.Client = client
-	}
-}
+// Transformer is a function that transforms an event into a response.
+var Transformer = func(e Event) (*prompts.ChatCompletionResponse, error) {
+	resp := &prompts.ChatCompletionResponse{}
 
-// WithTimeout configures the timeout.
-func WithTimeout(timeout time.Duration) Opt {
-	return func(o *Opts) {
-		o.Client.Timeout = timeout
-	}
-}
-
-// WithBaseURL configures the base URL.
-func WithBaseURL(url string) Opt {
-	return func(o *Opts) {
-		o.BaseURL = url
-	}
-}
-
-// Defaults is the default options.
-func Defaults() *Opts {
-	return &Opts{
-		BaseURL: DefaultURL,
-		Timeout: DefaultTimeout,
-		Client:  &http.Client{},
-	}
-}
-
-// Perplexity is a chat model.
-type Perplexity struct {
-	opts *Opts
-}
-
-var _ prompts.Prompter = (*Perplexity)(nil)
-
-// New returns a new Perplexity.
-func New(opts ...Opt) *Perplexity {
-	options := Defaults()
-
-	for _, opt := range opts {
-		opt(options)
-	}
-
-	p := new(Perplexity)
-	p.opts = options
-
-	return p
-}
-
-// SendCompletionRequest sends a completion request to the Perplexity API.
-func (p *Perplexity) SendCompletionRequest(ctx context.Context, req *prompts.ChatCompletionRequest) (*prompts.ChatCompletionResponse, error) {
-	res := &prompts.ChatCompletionResponse{}
-
-	b, err := json.Marshal(req)
-	if err != nil {
+	if err := json.Unmarshal(e.Data, &resp); err != nil {
 		return nil, err
 	}
 
-	r, err := http.NewRequestWithContext(ctx, http.MethodPost, p.opts.BaseURL, bytes.NewBuffer(b))
-	if err != nil {
-		return nil, err
-	}
-
-	r.Header.Set("Content-Type", "application/json")
-	r.Header.Set("Authorization", "Bearer "+p.opts.ApiKey)
-	r.Header.Set("Accept", "application/json")
-
-	resp, err := p.opts.Client.Do(r)
-	if err != nil {
-		return nil, err
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("unexpected status code: %d", resp.StatusCode)
-	}
-
-	body, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return nil, err
-	}
-
-	err = json.Unmarshal(body, res)
-	if err != nil {
-		return nil, err
-	}
-
-	return res, nil
+	return resp, nil
 }
 
-// SendStreamCompletionRequest sends a streamed completion request to the Perplexity API.
-func (p *Perplexity) SendStreamCompletionRequest(ctx context.Context, req *prompts.ChatCompletionRequest, iter prompts.StreamIterator) error {
-	b, err := json.Marshal(req)
-	if err != nil {
-		return err
-	}
+const maxBufferSize = 512 * 1 * 1000
 
-	r, err := http.NewRequestWithContext(ctx, http.MethodPost, p.opts.BaseURL, bytes.NewBuffer(b))
-	if err != nil {
-		return err
-	}
+// Decoder is an interface that defines the methods for decoding events from the response body.
+var Decoder = func(body io.ReadCloser) iter.Seq[Event] {
+	scn := bufio.NewScanner(body)
+	scn.Split(bufio.ScanLines)
+	scn.Buffer(make([]byte, maxBufferSize), maxBufferSize)
 
-	r.Header.Set("Content-Type", "application/json")
-	r.Header.Set("Authorization", "Bearer "+p.opts.ApiKey)
-	r.Header.Set("Accept", "text/event-stream")
-	r.Header.Set("Connection", "keep-alive")
+	return func(yield func(Event) bool) {
+		for scn.Scan() {
+			event := cast.Zero[Event]()
 
-	resp, err := p.opts.Client.Do(r)
-	if err != nil {
-		return err
-	}
-	defer resp.Body.Close()
+			b := scn.Bytes()
 
-	if resp.StatusCode != http.StatusOK {
-		var promptErr prompts.PromptError
-		err := json.NewDecoder(resp.Body).Decode(&promptErr)
-		if err != nil {
-			return err
+			name, value, _ := bytes.Cut(b, []byte(":"))
+			if len(value) > 0 && value[0] == ' ' {
+				value = value[1:]
+			}
+
+			switch string(name) {
+			case "":
+				continue
+			case "event":
+				event.Type = string(value)
+			case "data":
+				event.Data = value
+			}
+
+			if !yield(event) {
+				break
+			}
 		}
-
-		return &promptErr
 	}
-
-	dec := NewDecoder(resp.Body)
-	stream := prompts.NewStream(dec, Transformer)
-
-	err = iter(stream.All())
-	if err != nil {
-		return err
-	}
-
-	return nil
 }

@@ -81,7 +81,7 @@ func (r *ChatCompletionRequest) AddMessages(msg ...ChatCompletionMessage) {
 }
 
 // SetMessages sets the messages for the chat completion request.
-func (r *ChatCompletionRequest) SetMessages(msg []ChatCompletionMessage) {
+func (r *ChatCompletionRequest) SetMessages(msg ...ChatCompletionMessage) {
 	r.Messages = msg
 }
 
@@ -112,7 +112,9 @@ func (r *ChatCompletionRequest) SetStream(stream bool) {
 
 // Index is the index for the chat completion.
 type Index struct {
-	Role    Role   `json:"role"`
+	// Role is the role of the message sender.
+	Role Role `json:"role"`
+	// Content is the content of the message.
 	Content string `json:"content"`
 }
 
