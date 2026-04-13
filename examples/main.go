@@ -6,7 +6,6 @@ import (
 	"os"
 
 	"github.com/katallaxie/prompts"
-	"github.com/katallaxie/prompts/iterx"
 	"github.com/katallaxie/prompts/perplexity"
 )
 
@@ -34,7 +33,7 @@ func main() {
 	req := prompts.NewStreamChatCompletionRequest(msgs...)
 	req.SetModel(perplexity.DefaultModel)
 
-	err := prompt.SendStreamCompletionRequest(context.Background(), req, iterx.Print)
+	err := prompt.SendStreamCompletionRequest(context.Background(), req, prompts.Print)
 	if err != nil {
 		fmt.Printf("Error: %v\n", err)
 		os.Exit(1)

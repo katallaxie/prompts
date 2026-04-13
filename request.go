@@ -58,8 +58,10 @@ type ChatCompletionRequest struct {
 }
 
 // NewChatCompletionRequest creates a new chat completion request.
-func NewChatCompletionRequest() *ChatCompletionRequest {
-	return &ChatCompletionRequest{}
+func NewChatCompletionRequest(msgs ...ChatCompletionMessage) *ChatCompletionRequest {
+	return &ChatCompletionRequest{
+		Messages: msgs,
+	}
 }
 
 // NewStreamChatCompletionRequest creates a new chat completion request with streaming enabled.
