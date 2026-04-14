@@ -2,23 +2,27 @@ package prompts
 
 import (
 	"fmt"
-	"iter"
 
 	"github.com/katallaxie/pkg/logx"
 )
 
 // Log is a function that logs the event.
-func Log(res *ChatCompletionResponse) error {
-	logx.Infow("Received response", map[string]interface{}{
-		"model":   res.Model,
-		"choices": res.Choices,
-	})
+func Log(stream Stream) error {
+	for msg, err := range stream {
+		if err != nil {
+			return err
+		}
+
+		logx.Infow("Received message", map[string]interface{}{
+			"message": msg,
+		})
+	}
 
 	return nil
 }
 
 // Print is a function that prints the event.
-func Print(stream iter.Seq2[*ChatCompletionResponse, error]) error {
+func Print(stream Stream) error {
 	for msg, err := range stream {
 		if err != nil {
 			return err

@@ -6,17 +6,13 @@
 [![Taylor Swift](https://img.shields.io/badge/secured%20by-taylor%20swift-brightgreen.svg)](https://twitter.com/SwiftOnSecurity)
 [![Volkswagen](https://auchenberg.github.io/volkswagen/volkswargen_ci.svg?v=1)](https://github.com/auchenberg/volkswagen)
 
-A teeny-tiny package to prompt for answers in [Ollama](https://ollama.com/), [vllm](https://github.com/vllm-project/vllm) and other OpenAI-compatible API servers.
+A teeny-tiny package to prompt for answers in [Ollama](https://ollama.com/), [Perplexity](https://www.perplexity.ai/), [vllm](https://github.com/vllm-project/vllm) and other OpenAI-compatible API servers.
 
 ## Usage
 
 ```go
-prompt := prompts.New(
-    prompts.WithDecoder(perplexity.Decoder),
-    prompts.WithTransformer(perplexity.Transformer),
-    prompts.WithURL[perplexity.Event](perplexity.DefaultURL),
-    prompts.WithApiKey[perplexity.Event](os.Getenv("PPLX_API_KEY")),
-)
+client := perplexity.New(
+    perplexity.Defaults(prompts.WithApiKey[perplexity.Event](os.Getenv("PPLX_API_KEY")))...)
 
 msgs := []prompts.ChatCompletionMessage{
     {
@@ -30,13 +26,14 @@ msgs := []prompts.ChatCompletionMessage{
 }
 
 req := prompts.NewStreamChatCompletionRequest(msgs...)
-req.SetModel(perplexity.DefaultModel)
+req.Model = perplexity.DefaultModel
 
-err := prompt.SendStreamCompletionRequest(context.Background(), req, prompts.Print)
+stream, err := client.SendStreamCompletionRequest(context.Background(), req)
 if err != nil {
-    fmt.Printf("Error: %v\n", err)
-    os.Exit(1)
+    panic(err)
 }
+
+prompts.Print(stream)
 ```
 
 ## Supported APIs

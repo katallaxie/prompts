@@ -2,19 +2,33 @@ package ollama
 
 import (
 	"bufio"
+	"bytes"
+	"context"
 	"encoding/json"
+	"fmt"
 	"io"
 	"iter"
+	"net/http"
 
 	"github.com/katallaxie/pkg/cast"
 	"github.com/katallaxie/prompts"
 )
+
+const maxBufferSize = 512 * 1 * 1000
 
 // DefaultURL is the default endpoint for the Ollama API.
 const DefaultURL = "http://localhost:7869/api/chat"
 
 // DefaultModel is the default model for the Ollama API.
 const DefaultModel = "smollm"
+
+// Defaults returns the default options for the Perplexity API.
+func Defaults() []prompts.Opt[Event] {
+	return []prompts.Opt[Event]{
+		prompts.WithURL[Event](DefaultURL),
+		prompts.WithClient[Event](http.DefaultClient),
+	}
+}
 
 // Event is the structure of the event stream response from the Ollama API.
 type Event struct {
@@ -31,25 +45,45 @@ type Event struct {
 	Done bool `json:"done"`
 }
 
-// Transformer is a function that transforms an Event into a ChatCompletionResponse.
-var Transformer = func(e Event) (*prompts.ChatCompletionResponse, error) {
-	return &prompts.ChatCompletionResponse{
-		Model: e.Model,
-		Choices: []prompts.ChatCompletionChoice{
-			{
-				Message: prompts.Index{
-					Role:    prompts.Role(e.Message.Role),
-					Content: e.Message.Content,
+var _ prompts.StreamTransformer[Event] = (*Transformer)(nil)
+
+// Transformer is a struct that implements the StreamTransformer interface for the Ollama API.
+type Transformer struct{}
+
+// Transform transforms an event into a ChatCompletionResponse.
+func (t *Transformer) Transform(iter iter.Seq[Event]) prompts.Stream {
+	return func(yield func(*prompts.ChatCompletionResponse, error) bool) {
+		for e := range iter {
+			var res prompts.ChatCompletionResponse
+			res.Model = e.Model
+			res.Choices = []prompts.ChatCompletionChoice{
+				{
+					Message: prompts.ChatCompletionChoiceIndex{
+						Role:    prompts.Role(e.Message.Role),
+						Content: e.Message.Content,
+					},
 				},
-			},
-		},
-	}, nil
+			}
+
+			if !yield(&res, nil) {
+				break
+			}
+		}
+	}
 }
 
-const maxBufferSize = 512 * 1 * 1000
+// NewTransformer creates a new Transformer.
+func NewTransformer() *Transformer {
+	return &Transformer{}
+}
 
-// Decoder is a function that decodes the event stream response from the Ollama API into a sequence of Events.
-var Decoder = func(body io.ReadCloser) iter.Seq[Event] {
+var _ prompts.StreamDecoder[Event] = (*Decoder)(nil)
+
+// Decoder is a struct that implements the StreamDecoder interface for the Ollama API.
+type Decoder struct{}
+
+// Decode decodes the event stream response from the Ollama API into a sequence of Events.
+func (d *Decoder) Decode(body io.ReadCloser) iter.Seq[Event] {
 	scn := bufio.NewScanner(body)
 	scn.Split(bufio.ScanLines)
 	scn.Buffer(make([]byte, maxBufferSize), maxBufferSize)
@@ -71,5 +105,108 @@ var Decoder = func(body io.ReadCloser) iter.Seq[Event] {
 				break
 			}
 		}
+
+		body.Close()
 	}
+}
+
+// NewDecoder creates a new Decoder.
+func NewDecoder() *Decoder {
+	return &Decoder{}
+}
+
+// Ollama is a prompter that implements the Prompter interface for the Ollama API.
+type Ollama struct {
+	opts *prompts.Opts[Event]
+}
+
+var _ prompts.Prompter = (*Ollama)(nil)
+
+// New creates a new Ollama prompter with the given options.
+func New(opts ...prompts.Opt[Event]) *Ollama {
+	o := &prompts.Opts[Event]{}
+
+	for _, opt := range opts {
+		opt(o)
+	}
+
+	return &Ollama{
+		opts: o,
+	}
+}
+
+// SendCompletionRequest sends a chat completion request to the Ollama API and returns the response.
+func (p *Ollama) SendCompletionRequest(ctx context.Context, req *prompts.ChatCompletionRequest) (*prompts.ChatCompletionResponse, error) {
+	res := &prompts.ChatCompletionResponse{}
+
+	b, err := json.Marshal(req)
+	if err != nil {
+		return nil, err
+	}
+
+	r, err := http.NewRequestWithContext(ctx, http.MethodPost, p.opts.BaseURL, bytes.NewBuffer(b))
+	if err != nil {
+		return nil, err
+	}
+
+	r.Header.Set("Content-Type", "application/json")
+	r.Header.Set("Authorization", "Bearer "+p.opts.ApiKey)
+	r.Header.Set("Accept", "application/json")
+
+	resp, err := p.opts.Client.Do(r)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("unexpected status code: %d", resp.StatusCode)
+	}
+
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, err
+	}
+
+	err = json.Unmarshal(body, res)
+	if err != nil {
+		return nil, err
+	}
+
+	return res, nil
+}
+
+// SendStreamCompletionRequest sends a chat completion request and streams the response.
+func (p *Ollama) SendStreamCompletionRequest(ctx context.Context, req *prompts.ChatCompletionRequest) (prompts.Stream, error) {
+	b, err := json.Marshal(req)
+	if err != nil {
+		return nil, err
+	}
+
+	r, err := http.NewRequestWithContext(ctx, http.MethodPost, p.opts.BaseURL, bytes.NewBuffer(b))
+	if err != nil {
+		return nil, err
+	}
+
+	r.Header.Set("Content-Type", "application/json")
+	r.Header.Set("Authorization", "Bearer "+p.opts.ApiKey)
+	r.Header.Set("Accept", "text/event-stream")
+	r.Header.Set("Connection", "keep-alive")
+
+	resp, err := p.opts.Client.Do(r) //nolint:bodyclose
+	if err != nil {
+		return nil, err
+	}
+
+	if resp.StatusCode != http.StatusOK {
+		var promptErr prompts.PromptError
+		err := json.NewDecoder(resp.Body).Decode(&promptErr)
+		if err != nil {
+			return nil, err
+		}
+
+		return nil, &promptErr
+	}
+
+	return NewTransformer().Transform(NewDecoder().Decode(resp.Body)), nil
 }
