@@ -11,6 +11,7 @@ import (
 	"net/http"
 
 	"github.com/katallaxie/pkg/cast"
+	"github.com/katallaxie/pkg/slices"
 	"github.com/katallaxie/prompts"
 )
 
@@ -22,12 +23,14 @@ const DefaultURL = "http://localhost:7869/api/chat"
 // DefaultModel is the default model for the Ollama API.
 const DefaultModel = "smollm"
 
-// Defaults returns the default options for the Perplexity API.
-func Defaults() []prompts.Opt[Event] {
-	return []prompts.Opt[Event]{
-		prompts.WithURL[Event](DefaultURL),
-		prompts.WithClient[Event](http.DefaultClient),
+// Defaults returns the default options for the Ollama API.
+func Defaults(opts ...prompts.Opt) []prompts.Opt {
+	defaults := []prompts.Opt{
+		prompts.WithURL(DefaultURL),
+		prompts.WithClient(http.DefaultClient),
 	}
+
+	return slices.Append(defaults, opts...)
 }
 
 // Event is the structure of the event stream response from the Ollama API.
@@ -116,23 +119,13 @@ func NewDecoder() *Decoder {
 }
 
 // Ollama is a prompter that implements the Prompter interface for the Ollama API.
-type Ollama struct {
-	opts *prompts.Opts[Event]
-}
+type Ollama struct{}
 
 var _ prompts.Prompter = (*Ollama)(nil)
 
 // New creates a new Ollama prompter with the given options.
-func New(opts ...prompts.Opt[Event]) *Ollama {
-	o := &prompts.Opts[Event]{}
-
-	for _, opt := range opts {
-		opt(o)
-	}
-
-	return &Ollama{
-		opts: o,
-	}
+func New() *Ollama {
+	return &Ollama{}
 }
 
 // SendCompletionRequest sends a chat completion request to the Ollama API and returns the response.
@@ -144,16 +137,16 @@ func (p *Ollama) SendCompletionRequest(ctx context.Context, req *prompts.ChatCom
 		return nil, err
 	}
 
-	r, err := http.NewRequestWithContext(ctx, http.MethodPost, p.opts.BaseURL, bytes.NewBuffer(b))
+	r, err := http.NewRequestWithContext(ctx, http.MethodPost, req.Opts.BaseURL, bytes.NewBuffer(b))
 	if err != nil {
 		return nil, err
 	}
 
 	r.Header.Set("Content-Type", "application/json")
-	r.Header.Set("Authorization", "Bearer "+p.opts.ApiKey)
+	r.Header.Set("Authorization", "Bearer "+req.Opts.ApiKey)
 	r.Header.Set("Accept", "application/json")
 
-	resp, err := p.opts.Client.Do(r)
+	resp, err := req.Opts.Client.Do(r)
 	if err != nil {
 		return nil, err
 	}
@@ -183,17 +176,17 @@ func (p *Ollama) SendStreamCompletionRequest(ctx context.Context, req *prompts.C
 		return nil, err
 	}
 
-	r, err := http.NewRequestWithContext(ctx, http.MethodPost, p.opts.BaseURL, bytes.NewBuffer(b))
+	r, err := http.NewRequestWithContext(ctx, http.MethodPost, req.Opts.BaseURL, bytes.NewBuffer(b))
 	if err != nil {
 		return nil, err
 	}
 
 	r.Header.Set("Content-Type", "application/json")
-	r.Header.Set("Authorization", "Bearer "+p.opts.ApiKey)
+	r.Header.Set("Authorization", "Bearer "+req.Opts.ApiKey)
 	r.Header.Set("Accept", "text/event-stream")
 	r.Header.Set("Connection", "keep-alive")
 
-	resp, err := p.opts.Client.Do(r) //nolint:bodyclose
+	resp, err := req.Opts.Client.Do(r) //nolint:bodyclose
 	if err != nil {
 		return nil, err
 	}

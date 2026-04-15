@@ -11,21 +11,32 @@ import (
 // This example demonstrates how to create a completion request with a message
 // It then sends the request to the API and prints the last completion content.
 func main() {
-	client := perplexity.New(
-		perplexity.Defaults(prompts.WithApiKey[perplexity.Event](os.Getenv("PPLX_API_KEY")))...)
+	client := perplexity.New()
 
 	msgs := []prompts.ChatCompletionMessage{
 		{
-			Role:    prompts.RoleSystem,
-			Content: "You are a helpful assistant. You start every answer with 'Sure my lord!'",
+			Role: prompts.RoleSystem,
+			Content: []prompts.ChatCompletionMessageContent{
+				{
+					Content: prompts.ChatCompletionMessageContentText{
+						Text: "You are a helpful assistant. You answer questions to the best of your ability.",
+					},
+				},
+			},
 		},
 		{
-			Role:    prompts.RoleUser,
-			Content: "What is the definition of Pi?",
+			Role: prompts.RoleUser,
+			Content: []prompts.ChatCompletionMessageContent{
+				{
+					Content: prompts.ChatCompletionMessageContentText{
+						Text: "What is the definition of Pi?",
+					},
+				},
+			},
 		},
 	}
 
-	req := prompts.NewStreamChatCompletionRequest(msgs...)
+	req := prompts.NewStreamChatCompletionRequest(perplexity.Defaults(prompts.WithApiKey(os.Getenv("PPLX_API_KEY")), prompts.WithMessages(msgs...))...)
 	req.Model = perplexity.DefaultModel
 
 	stream, err := client.SendStreamCompletionRequest(context.Background(), req)
