@@ -15,82 +15,6 @@ import (
 	"github.com/katallaxie/prompts"
 )
 
-// PerplexityChatCompletionRequest is the structure of the chat completion request for the Perplexity API.
-type PerplexityChatCompletionRequest struct {
-	// Model is the model for the chat completion request.
-	Model string `json:"model"`
-	// Messages is the list of messages for the chat completion request.
-	Messages []struct {
-		Role    string `json:"role"`
-		Content []struct {
-			Type string `json:"type"`
-			Text string `json:"text,omitempty"`
-		} `json:"content"`
-	} `json:"messages"`
-	// MaxTokens is the maximum number of tokens for the chat completion request.
-	MaxTokens *int `json:"max_tokens,omitzero"`
-	// Temperature is the sampling temperature
-	Temperature *float32 `json:"temperature,omitzero"`
-	// Stream is a flag to enable streaming
-	Stream bool `json:"stream,omitempty"`
-	// TopP is the nucleus sampling parameter
-	TopP *float64 `json:"top_p,omitzero"`
-	// TopK is the number of top tokens to sample from
-	TopK *int `json:"top_k,omitzero"`
-}
-
-// UnmarshalPrompt unmarshals a ChatCompletionRequest into a PerplexityChatCompletionRequest.
-func (p *PerplexityChatCompletionRequest) UnmarshalPrompt(in *prompts.ChatCompletionRequest) error {
-	req := &PerplexityChatCompletionRequest{
-		Model:       in.Model,
-		MaxTokens:   in.MaxTokens,
-		Temperature: in.Temperature,
-		Stream:      in.Stream,
-		TopP:        in.TopP,
-		TopK:        in.TopK,
-	}
-
-	for _, msg := range in.Messages {
-		m := struct {
-			Role    string `json:"role"`
-			Content []struct {
-				Type string `json:"type"`
-				Text string `json:"text,omitempty"`
-			} `json:"content"`
-		}{
-			Role: msg.Role.String(),
-			Content: []struct {
-				Type string `json:"type"`
-				Text string `json:"text,omitempty"`
-			}{},
-		}
-
-		for _, c := range msg.Content {
-			if textContent, ok := c.GetText(); ok {
-				m.Content = append(m.Content, struct {
-					Type string `json:"type"`
-					Text string `json:"text,omitempty"`
-				}{
-					Type: "text",
-					Text: textContent.Text,
-				})
-			}
-		}
-
-		req.Messages = append(req.Messages, m)
-	}
-
-	p.Model = req.Model
-	p.Messages = req.Messages
-	p.MaxTokens = req.MaxTokens
-	p.Temperature = req.Temperature
-	p.Stream = req.Stream
-	p.TopP = req.TopP
-	p.TopK = req.TopK
-
-	return nil
-}
-
 const maxBufferSize = 512 * 1 * 1000
 
 // DefaultURL is the default endpoint for the Perplexity API.
@@ -203,20 +127,12 @@ func New() *Perplexity {
 
 // SendCompletionRequest sends a chat completion request to the Perplexity API and returns the response.
 func (p *Perplexity) SendCompletionRequest(ctx context.Context, req *prompts.ChatCompletionRequest) (*prompts.ChatCompletionResponse, error) {
-	prompt := &PerplexityChatCompletionRequest{}
-	err := prompt.UnmarshalPrompt(req)
-	if err != nil {
-		return nil, err
-	}
-
 	res := &prompts.ChatCompletionResponse{}
 
 	b, err := json.Marshal(req)
 	if err != nil {
 		return nil, err
 	}
-
-	fmt.Println(string(b))
 
 	r, err := http.NewRequestWithContext(ctx, http.MethodPost, req.Opts.BaseURL, bytes.NewBuffer(b))
 	if err != nil {
@@ -241,6 +157,8 @@ func (p *Perplexity) SendCompletionRequest(ctx context.Context, req *prompts.Cha
 	if err != nil {
 		return nil, err
 	}
+
+	fmt.Printf("Request body: %s\n", string(body))
 
 	err = json.Unmarshal(body, res)
 	if err != nil {

@@ -39,10 +39,10 @@ func main() {
 	req := prompts.NewStreamChatCompletionRequest(perplexity.Defaults(prompts.WithApiKey(os.Getenv("PPLX_API_KEY")), prompts.WithMessages(msgs...))...)
 	req.Model = perplexity.DefaultModel
 
-	stream, err := client.SendStreamCompletionRequest(context.Background(), req)
+	res, err := client.SendStreamCompletionRequest(context.Background(), req)
 	if err != nil {
 		panic(err)
 	}
 
-	prompts.Print(stream)
+	prompts.Print(res)
 }

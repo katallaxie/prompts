@@ -8,6 +8,27 @@ import (
 	"github.com/katallaxie/pkg/utilx"
 )
 
+// FinishReason is the reason for finishing a chat completion.
+type FinishReason string
+
+const (
+	// FinishReasonStop indicates that the chat completion was finished because the model stopped generating content.
+	FinishReasonStop FinishReason = "stop"
+	// FinishReasonLength indicates that the chat completion was finished because the maximum length was reached.
+	FinishReasonLength FinishReason = "length"
+	// FinishReasonContentFilter indicates that the chat completion was finished because the content filter was triggered.
+	FinishReasonContentFilter FinishReason = "content_filter"
+	// FinishReasonUnknown indicates that the chat completion was finished for an unknown reason.
+	FinishReasonUnknown FinishReason = ""
+)
+
+var _ fmt.Stringer = (*FinishReason)(nil)
+
+// String returns the string representation of the finish reason.
+func (f FinishReason) String() string {
+	return string(f)
+}
+
 // ChatCompletionChoiceIndex is the index for the chat completion.
 type ChatCompletionChoiceIndex struct {
 	// Role is the role of the message sender.
@@ -23,7 +44,7 @@ type ChatCompletionChoice struct {
 	// Message is the message for the choice
 	Message ChatCompletionChoiceIndex `json:"message,omitempty"`
 	// FinishReason is the reason for finishing
-	FinishReason string `json:"finish_reason,omitempty"`
+	FinishReason FinishReason `json:"finish_reason,omitempty"`
 	// Delta is the delta for the choice
 	Delta ChatCompletionChoiceIndex `json:"delta,omitempty"`
 	// Index is the index for the choice
@@ -63,6 +84,22 @@ type ChatCompletionResponse struct {
 	Model string `json:"model"`
 	// Choices is the list of choices returned in the response
 	Choices []ChatCompletionChoice `json:"choices"`
+	// Citations is the list of citations returned in the response
+	Citations []string `json:"citations,omitempty"`
+	// SearchResults is the list of search results returned in the response
+	SearchResults []SearchResult `json:"search_results,omitempty"`
+}
+
+// SearchResult represents a search result structure for chat completion API.
+type SearchResult struct {
+	// Title is the title of the search result
+	Title string `json:"title,omitempty"`
+	// URL is the URL of the search result
+	URL string `json:"url,omitempty"`
+	// Snippet is the snippet of the search result
+	Snippet string `json:"snippet,omitempty"`
+	// Source is the source of the search result
+	Source string `json:"source,omitempty"`
 }
 
 // String returns the string representation of the response.

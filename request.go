@@ -46,6 +46,114 @@ const (
 	RoleNone Role = ""
 )
 
+// ToolCall represents a tool call that can be used in a chat completion response.
+type ToolCall struct {
+	ToolCall isToolCall
+}
+
+// Reset resets the tool call for the chat completion response.
+func (t *ToolCall) Reset() {
+	*t = ToolCall{}
+}
+
+type isToolCall interface {
+	isToolCall()
+}
+
+// NewToolCall creates a new tool call for the chat completion response.
+func NewToolCall() ToolCall {
+	return ToolCall{}
+}
+
+// ToolCallFunction represents a tool call function that can be used in a chat completion response.
+type ToolCallFunction struct {
+	// ID is the ID of the function to call when the tool is used.
+	ID string `json:"id"`
+	// CallID is the call ID for the function call.
+	CallID string `json:"call_id"`
+	// Name is the name of the function to call when the tool is used.
+	Name string `json:"name"`
+	// Arguments is the arguments to pass to the function when the tool is used.
+	Arguments map[string]interface{} `json:"arguments,omitempty"`
+}
+
+// MarshalJSON marshals the tool call function into JSON.
+func (t ToolCallFunction) MarshalJSON() ([]byte, error) {
+	return json.Marshal(struct {
+		Type      string                 `json:"type"`
+		ID        string                 `json:"id"`
+		CallID    string                 `json:"call_id"`
+		Name      string                 `json:"name"`
+		Arguments map[string]interface{} `json:"arguments,omitempty"`
+	}{
+		Type:      "function",
+		ID:        t.ID,
+		CallID:    t.CallID,
+		Name:      t.Name,
+		Arguments: t.Arguments,
+	})
+}
+
+func (t ToolCallFunction) isToolCall() {}
+
+// Tool represents the tools for the chat completion request.
+type Tool struct {
+	Tool isTool
+}
+
+type isTool interface {
+	isTool()
+}
+
+// Reset resets the tools for the chat completion request.
+func (t *Tool) Reset() {
+	*t = Tool{}
+}
+
+// NewTool creates a new tool for the chat completion request.
+func NewTool() Tool {
+	return Tool{}
+}
+
+// ToolFunction represents a function to call when a tool is used.
+type ToolFunction struct {
+	// Name is the name of the function to call when the tool is used.
+	Name string `json:"name"`
+	// Description is the description of the function to call when the tool is used.
+	Description string `json:"description,omitempty"`
+	// Strict indicates whether the function call should be strictly enforced.
+	Strict bool `json:"strict,omitempty"`
+	// Parameters is the parameters to pass to the function when the tool is used.
+	Parameters map[string]interface{} `json:"parameters,omitempty"`
+	// Required is the list of required parameters for the function call.
+	Required []string `json:"required,omitempty"`
+	// AdditionalProperties indicates whether additional properties are allowed for the function call.
+	AdditionalProperties bool `json:"additional_properties,omitempty"`
+}
+
+// MarshalJSON marshals the tool call function into JSON.
+func (t ToolFunction) MarshalJSON() ([]byte, error) {
+	return json.Marshal(struct {
+		Type                 string                 `json:"type"`
+		Name                 string                 `json:"name"`
+		Description          string                 `json:"description,omitempty"`
+		Strict               bool                   `json:"strict,omitempty"`
+		Parameters           map[string]interface{} `json:"parameters,omitempty"`
+		Required             []string               `json:"required,omitempty"`
+		AdditionalProperties bool                   `json:"additionalProperties,omitempty"` //nolint:tagliatelle
+	}{
+		Type:                 "function",
+		Name:                 t.Name,
+		Description:          t.Description,
+		Strict:               t.Strict,
+		Parameters:           t.Parameters,
+		Required:             t.Required,
+		AdditionalProperties: t.AdditionalProperties,
+	})
+}
+
+func (t ToolFunction) isToolCall() {}
+
 // ChatCompletionMessageContent is the content of a chat completion message.
 type ChatCompletionMessageContent struct {
 	Content isChatCompletionMessageContent
@@ -103,8 +211,6 @@ func (c ChatCompletionMessageContent) GetFile() (ChatCompletionMessageContentFil
 
 // ChatCompletionMessageContentText is the text content of a chat completion message.
 type ChatCompletionMessageContentText struct {
-	// Type is the type of the content.
-	Type string `json:"type"`
 	// Text is the text of the content.
 	Text string `json:"text"`
 }
@@ -174,7 +280,7 @@ type ChatCompletionMessage struct {
 	// Content is the content of the message.
 	Content []ChatCompletionMessageContent `json:"content"`
 	// ToolCalls is the tool call for the message.
-	ToolCalls []ToolCall `json:"tool_calls,omitempty"`
+	// ToolCalls []ToolCall `json:"tool_calls,omitempty"`
 }
 
 // ChatCompletionRequest is the request for chat completion.
