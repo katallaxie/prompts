@@ -180,10 +180,11 @@ func (p *Perplexity) SendStreamCompletionRequest(ctx context.Context, req *promp
 		return nil, err
 	}
 
-	r.Header.Set("Content-Type", "application/json")
-	r.Header.Set("Authorization", "Bearer "+req.Opts.ApiKey)
 	r.Header.Set("Accept", "text/event-stream")
+	r.Header.Set("Authorization", "Bearer "+req.Opts.ApiKey)
+	r.Header.Set("Cache-Control", "no-cache")
 	r.Header.Set("Connection", "keep-alive")
+	r.Header.Set("Content-Type", "application/json")
 
 	resp, err := req.Opts.Client.Do(r) //nolint:bodyclose
 	if err != nil {

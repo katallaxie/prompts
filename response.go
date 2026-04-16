@@ -37,6 +37,16 @@ type ChatCompletionChoiceIndex struct {
 	Content string `json:"content"`
 }
 
+// CompletionUsage represents the usage of the chat completion.
+type CompletionUsage struct {
+	// PromptTokens is the number of tokens in the prompt.
+	PromptTokens int `json:"prompt_tokens,omitempty"`
+	// CompletionTokens is the number of tokens in the completion.
+	CompletionTokens int `json:"completion_tokens,omitempty"`
+	// TotalTokens is the total number of tokens used in the chat completion.
+	TotalTokens int `json:"total_tokens,omitempty"`
+}
+
 var _ fmt.Stringer = (*ChatCompletionResponse)(nil)
 
 // ChatCompletionChoice is the choice for chat completion.
@@ -88,6 +98,10 @@ type ChatCompletionResponse struct {
 	Citations []string `json:"citations,omitempty"`
 	// SearchResults is the list of search results returned in the response
 	SearchResults []SearchResult `json:"search_results,omitempty"`
+	// SystemFingerprint is the system fingerprint returned in the response
+	SystemFingerprint string `json:"system_fingerprint,omitempty"`
+	// CompletionUsage is the usage of the chat completion returned in the response
+	CompletionUsage CompletionUsage `json:"usage,omitempty"`
 }
 
 // SearchResult represents a search result structure for chat completion API.
