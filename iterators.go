@@ -7,8 +7,8 @@ import (
 )
 
 // Log is a function that logs the event.
-func Log(stream Stream) error {
-	for msg, err := range stream {
+func Log(gen Generator) error {
+	for msg, err := range gen {
 		if err != nil {
 			return err
 		}
@@ -22,8 +22,8 @@ func Log(stream Stream) error {
 }
 
 // Print is a function that prints the event.
-func Print(stream Stream) error {
-	for msg, err := range stream {
+func Print(gen Generator) error {
+	for msg, err := range gen {
 		if err != nil {
 			return err
 		}

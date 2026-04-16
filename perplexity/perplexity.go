@@ -46,13 +46,13 @@ var _ prompts.Prompter = (*Perplexity)(nil)
 // Perplexity is a prompter that implements the Prompter interface for the Perplexity API.
 type Perplexity struct{}
 
-var _ prompts.StreamTransformer[Event] = (*Transformer)(nil)
+var _ prompts.Transformer[Event] = (*Transformer)(nil)
 
-// Transformer is a struct that implements the StreamTransformer interface for the Perplexity API.
+// Transformer is a struct that implements the Transformer interface for the Perplexity API.
 type Transformer struct{}
 
 // Transform transforms an event into a ChatCompletionResponse.
-func (t *Transformer) Transform(iter iter.Seq[Event]) prompts.Stream {
+func (t *Transformer) Transform(iter iter.Seq[Event]) prompts.Generator {
 	return func(yield func(*prompts.ChatCompletionResponse, error) bool) {
 		for e := range iter {
 			var res prompts.ChatCompletionResponse
@@ -75,9 +75,9 @@ func NewTransformer() *Transformer {
 	return &Transformer{}
 }
 
-var _ prompts.StreamDecoder[Event] = (*Decoder)(nil)
+var _ prompts.Decoder[Event] = (*Decoder)(nil)
 
-// Decoder is a struct that implements the StreamDecoder interface for the Perplexity API.
+// Decoder is a struct that implements the Decoder interface for the Perplexity API.
 type Decoder struct{}
 
 // Decode decodes the response body into a stream of events.
@@ -169,7 +169,7 @@ func (p *Perplexity) SendCompletionRequest(ctx context.Context, req *prompts.Cha
 }
 
 // SendStreamCompletionRequest sends a chat completion request and streams the response.
-func (p *Perplexity) SendStreamCompletionRequest(ctx context.Context, req *prompts.ChatCompletionRequest) (prompts.Stream, error) {
+func (p *Perplexity) SendStreamCompletionRequest(ctx context.Context, req *prompts.ChatCompletionRequest) (prompts.Generator, error) {
 	b, err := json.Marshal(req)
 	if err != nil {
 		return nil, err

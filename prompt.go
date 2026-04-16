@@ -10,17 +10,18 @@ import (
 // DefaultTimeout is the default timeout for the Perplexity API.
 const DefaultTimeout = 30 * time.Second
 
-// Stream is the interface for a stream of events.
-type Stream iter.Seq2[*ChatCompletionResponse, error]
+// Generator is a type that represents a generator of chat completion responses.
+// It is an iterator that yields chat completion responses or errors.
+type Generator iter.Seq2[*ChatCompletionResponse, error]
 
-// StreamDecoder is a function type that implements the StreamDecoder interface.
-type StreamDecoder[E any] interface {
+// Decoder is a function type that implements the Decoder interface.
+type Decoder[E any] interface {
 	Decode(io.ReadCloser) iter.Seq[E]
 }
 
-// StreamTransformer is a function type that implements the StreamTransformer interface.
-type StreamTransformer[E any] interface {
-	Transform(iter.Seq[E]) Stream
+// Transformer is a function type that implements the Transformer interface.
+type Transformer[E any] interface {
+	Transform(iter.Seq[E]) Generator
 }
 
 // Prompter is the interface for sending chat completion requests to a language model.
@@ -29,5 +30,5 @@ type Prompter interface {
 	// SendCompletionRequest sends a chat completion request.
 	SendCompletionRequest(ctx context.Context, req *ChatCompletionRequest) (*ChatCompletionResponse, error)
 	// SendStreamCompletionRequest sends a chat completion request and streams the response.
-	SendStreamCompletionRequest(ctx context.Context, req *ChatCompletionRequest) (Stream, error)
+	SendStreamCompletionRequest(ctx context.Context, req *ChatCompletionRequest) (Generator, error)
 }
