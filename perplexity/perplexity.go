@@ -18,10 +18,10 @@ import (
 const maxBufferSize = 512 * 1 * 1000
 
 // DefaultURL is the default endpoint for the Perplexity API.
-const DefaultURL = "https://api.perplexity.ai/chat/completions"
+const DefaultURL = "https://api.perplexity.ai/v1/responses"
 
 // DefaultModel is the default model for the Perplexity API.
-const DefaultModel = "sonar-pro"
+const DefaultModel = "anthropic/claude-opus-4-6"
 
 // Defaults returns the default options for the Perplexity API.
 func Defaults(opts ...prompts.Opt) []prompts.Opt {
@@ -53,9 +53,9 @@ type Transformer struct{}
 
 // Transform transforms an event into a ChatCompletionResponse.
 func (t *Transformer) Transform(iter iter.Seq[Event]) prompts.Generator {
-	return func(yield func(*prompts.ChatCompletionResponse, error) bool) {
+	return func(yield func(*prompts.Response, error) bool) {
 		for e := range iter {
-			var res prompts.ChatCompletionResponse
+			var res prompts.Response
 			if err := json.Unmarshal(e.Data, &res); err != nil {
 				if !yield(nil, err) {
 					break
@@ -126,8 +126,8 @@ func New() *Perplexity {
 }
 
 // SendCompletionRequest sends a chat completion request to the Perplexity API and returns the response.
-func (p *Perplexity) SendCompletionRequest(ctx context.Context, req *prompts.ChatCompletionRequest) (*prompts.ChatCompletionResponse, error) {
-	res := &prompts.ChatCompletionResponse{}
+func (p *Perplexity) SendCompletionRequest(ctx context.Context, req *prompts.ChatCompletionRequest) (*prompts.Response, error) {
+	res := &prompts.Response{}
 
 	b, err := json.Marshal(req)
 	if err != nil {
@@ -158,7 +158,7 @@ func (p *Perplexity) SendCompletionRequest(ctx context.Context, req *prompts.Cha
 		return nil, err
 	}
 
-	fmt.Printf("Request body: %s\n", string(body))
+	fmt.Println(string(body))
 
 	err = json.Unmarshal(body, res)
 	if err != nil {

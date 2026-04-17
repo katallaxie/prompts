@@ -2,6 +2,8 @@ package main
 
 import (
 	"context"
+	"encoding/json"
+	"fmt"
 	"os"
 
 	"github.com/katallaxie/prompts"
@@ -29,20 +31,36 @@ func main() {
 			Content: []prompts.ChatCompletionMessageContent{
 				{
 					Content: prompts.ChatCompletionMessageContentText{
-						Text: "What is the definition of Pi?",
+						Text: "What is my horoscope? I am an Aquarius.",
 					},
 				},
 			},
 		},
 	}
 
-	req := prompts.NewStreamChatCompletionRequest(perplexity.Defaults(prompts.WithApiKey(os.Getenv("PPLX_API_KEY")), prompts.WithMessages(msgs...))...)
+	req := prompts.NewChatCompletionRequest(perplexity.Defaults(prompts.WithApiKey(os.Getenv("PPLX_API_KEY")), prompts.WithInput(msgs...))...)
 	req.Model = perplexity.DefaultModel
+	req.Tools = []prompts.ChatCompletionTool{
+		{
+			Tool: prompts.ChatCompletionFuntionTool{
+				Function: prompts.ChatCompletionFunctionDefintion{
+					Name:        "get_horoscope",
+					Description: "Get the horoscope for a given zodiac sign.",
+					Parameters: prompts.ChatCompletionFunctionParameters{
+						Properties: prompts.ChatCompletionFunctionProperties{
+							"sign": json.RawMessage(`{"type": "string", "enum": ["aries", "taurus", "gemini", "cancer", "leo", "virgo", "libra", "scorpio", "sagittarius", "capricorn", "aquarius", "pisces"]}`),
+						},
+						Required: []string{"sign"},
+					},
+				},
+			},
+		},
+	}
 
-	res, err := client.SendStreamCompletionRequest(context.Background(), req)
+	res, err := client.SendCompletionRequest(context.Background(), req)
 	if err != nil {
 		panic(err)
 	}
 
-	prompts.Print(res)
+	fmt.Println(res.Output)
 }

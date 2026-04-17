@@ -12,7 +12,7 @@ const DefaultTimeout = 30 * time.Second
 
 // Generator is a type that represents a generator of chat completion responses.
 // It is an iterator that yields chat completion responses or errors.
-type Generator iter.Seq2[*ChatCompletionResponse, error]
+type Generator iter.Seq2[*Response, error]
 
 // Decoder is a function type that implements the Decoder interface.
 type Decoder[E any] interface {
@@ -28,7 +28,7 @@ type Transformer[E any] interface {
 // It abstracts away the details of how the requests are sent and allows for different implementations (e.g., using different APIs or libraries).
 type Prompter interface {
 	// SendCompletionRequest sends a chat completion request.
-	SendCompletionRequest(ctx context.Context, req *ChatCompletionRequest) (*ChatCompletionResponse, error)
+	SendCompletionRequest(ctx context.Context, req *ChatCompletionRequest) (*Response, error)
 	// SendStreamCompletionRequest sends a chat completion request and streams the response.
 	SendStreamCompletionRequest(ctx context.Context, req *ChatCompletionRequest) (Generator, error)
 }
