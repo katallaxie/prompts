@@ -47,7 +47,7 @@ func New(client *prompts.Client) prompts.Prompter[*ResponseRequest, *Response] {
 func (p *Perplexity[I, O]) Respond(ctx context.Context, req I) (O, error) {
 	res := &Response{}
 
-	_, err := p.client.New().Post("responses").BodyJSON(req).ReceiveSuccess(res)
+	_, err := p.client.New().Post("responses").BodyJSON(req).ReceiveSuccess(ctx, res)
 	if err != nil {
 		return nil, err
 	}

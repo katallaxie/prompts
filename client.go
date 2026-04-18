@@ -1,6 +1,7 @@
 package prompts
 
 import (
+	"context"
 	"encoding/base64"
 	"io"
 	"net/http"
@@ -290,7 +291,7 @@ func (s *Client) BodyForm(bodyForm interface{}) *Client {
 // Request returns a new http.Request created with the Sling properties.
 // Returns any errors parsing the rawURL, encoding query structs, encoding
 // the body, or creating the http.Request.
-func (s *Client) Request() (*http.Request, error) {
+func (s *Client) Request(ctx context.Context) (*http.Request, error) {
 	reqURL, err := url.Parse(s.rawURL)
 	if err != nil {
 		return nil, err
@@ -308,7 +309,7 @@ func (s *Client) Request() (*http.Request, error) {
 			return nil, err
 		}
 	}
-	req, err := http.NewRequest(s.method, reqURL.String(), body) //nolint:noctx
+	req, err := http.NewRequestWithContext(ctx, s.method, reqURL.String(), body)
 	if err != nil {
 		return nil, err
 	}
@@ -366,8 +367,8 @@ func (s *Client) ResponseDecoder(decoder ResponseDecoder) *Client {
 // responses (2XX) are JSON decoded into the value pointed to by successV.
 // Any error creating the request, sending it, or decoding a 2XX response
 // is returned.
-func (s *Client) ReceiveSuccess(successV interface{}) (*http.Response, error) {
-	return s.Receive(successV, nil)
+func (s *Client) ReceiveSuccess(ctx context.Context, successV interface{}) (*http.Response, error) {
+	return s.Receive(ctx, successV, nil)
 }
 
 // Receive creates a new HTTP request and returns the response. Success
@@ -377,11 +378,12 @@ func (s *Client) ReceiveSuccess(successV interface{}) (*http.Response, error) {
 // decoding is skipped. Any error creating the request, sending it, or decoding
 // the response is returned.
 // Receive is shorthand for calling Request and Do.
-func (s *Client) Receive(successV, failureV interface{}) (*http.Response, error) {
-	req, err := s.Request()
+func (s *Client) Receive(ctx context.Context, successV, failureV interface{}) (*http.Response, error) {
+	req, err := s.Request(ctx)
 	if err != nil {
 		return nil, err
 	}
+
 	return s.Do(req, successV, failureV)
 }
 
@@ -396,6 +398,7 @@ func (s *Client) Do(req *http.Request, successV, failureV interface{}) (*http.Re
 	if err != nil {
 		return resp, err
 	}
+
 	// when err is nil, resp contains a non-nil resp.Body which must be closed
 	defer resp.Body.Close()
 
@@ -414,6 +417,7 @@ func (s *Client) Do(req *http.Request, successV, failureV interface{}) (*http.Re
 	if successV != nil || failureV != nil {
 		err = decodeResponse(resp, s.responseDecoder, successV, failureV)
 	}
+
 	return resp, err
 }
 
