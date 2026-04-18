@@ -13,14 +13,18 @@ import (
 // This example demonstrates how to create a completion request with a message
 // It then sends the request to the API and prints the last completion content.
 func main() {
-	client := perplexity.New()
+	prompt := prompts.New(
+		prompts.WithApiKey(os.Getenv("PPLX_API_KEY")),
+		prompts.WithBaseURL(perplexity.DefaultURL),
+		prompts.WithResponder(perplexity.NewResponder()),
+	)
 
-	msgs := []prompts.ChatCompletionMessage{
+	msgs := []prompts.ResponseInput{
 		{
 			Role: prompts.RoleSystem,
-			Content: []prompts.ChatCompletionMessageContent{
+			Content: []prompts.ResponseMessageContent{
 				{
-					Content: prompts.ChatCompletionMessageContentText{
+					Content: prompts.ResponseMessageContentText{
 						Text: "You are a helpful assistant. You answer questions to the best of your ability.",
 					},
 				},
@@ -28,9 +32,9 @@ func main() {
 		},
 		{
 			Role: prompts.RoleUser,
-			Content: []prompts.ChatCompletionMessageContent{
+			Content: []prompts.ResponseMessageContent{
 				{
-					Content: prompts.ChatCompletionMessageContentText{
+					Content: prompts.ResponseMessageContentText{
 						Text: "What is my horoscope? I am an Aquarius.",
 					},
 				},
@@ -38,16 +42,16 @@ func main() {
 		},
 	}
 
-	req := prompts.NewChatCompletionRequest(perplexity.Defaults(prompts.WithApiKey(os.Getenv("PPLX_API_KEY")), prompts.WithInput(msgs...))...)
+	req := prompts.NewResponseRequest(prompts.WithInput(msgs...))
 	req.Model = perplexity.DefaultModel
-	req.Tools = []prompts.ChatCompletionTool{
+	req.Tools = []prompts.ResponseTool{
 		{
-			Tool: prompts.ChatCompletionFuntionTool{
-				Function: prompts.ChatCompletionFunctionDefintion{
+			Tool: prompts.ResponseFunctionTool{
+				Function: prompts.ResponseFunctionDefinition{
 					Name:        "get_horoscope",
 					Description: "Get the horoscope for a given zodiac sign.",
-					Parameters: prompts.ChatCompletionFunctionParameters{
-						Properties: prompts.ChatCompletionFunctionProperties{
+					Parameters: prompts.ResponseFunctionParameters{
+						Properties: prompts.ResponseFunctionProperties{
 							"sign": json.RawMessage(`{"type": "string", "enum": ["aries", "taurus", "gemini", "cancer", "leo", "virgo", "libra", "scorpio", "sagittarius", "capricorn", "aquarius", "pisces"]}`),
 						},
 						Required: []string{"sign"},
@@ -57,7 +61,7 @@ func main() {
 		},
 	}
 
-	res, err := client.SendCompletionRequest(context.Background(), req)
+	res, err := prompt.Response.CreateResponse(context.Background(), req)
 	if err != nil {
 		panic(err)
 	}

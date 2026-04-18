@@ -8,39 +8,14 @@
 
 A teeny-tiny package to prompt for answers in [Ollama](https://ollama.com/), [Perplexity](https://www.perplexity.ai/), [vllm](https://github.com/vllm-project/vllm) and other OpenAI-compatible API servers.
 
-## Usage
+## Supported Schemas
 
-```go
-client := perplexity.New(
-    perplexity.Defaults(prompts.WithApiKey[perplexity.Event](os.Getenv("PPLX_API_KEY")))...)
+⚠️ The focus is on the modern Response API pioneered by [OpenAI](https://openai.com).
 
-msgs := []prompts.ChatCompletionMessage{
-    {
-        Role:    prompts.RoleSystem,
-        Content: "You are a helpful assistant. You start every answer with 'Sure my lord!'",
-    },
-    {
-        Role:    prompts.RoleUser,
-        Content: "What is the definition of Pi?",
-    },
-}
-
-req := prompts.NewStreamChatCompletionRequest(msgs...)
-req.Model = perplexity.DefaultModel
-
-stream, err := client.SendStreamCompletionRequest(context.Background(), req)
-if err != nil {
-    panic(err)
-}
-
-prompts.Print(stream)
-```
-
-## Supported APIs
-
-* [x] [Ollama](https://ollama.com/)
-* [x] [Perplexity](https://www.perplexity.ai/)
-* More are coming ...
+| Provider | Response API (compact) | Chat Completion API | Streams
+|---|---|---|---|
+| [Ollama](https://ollama.com/) | ✅ | 🛑 | 🏗️ |
+| [Perplexity](https://www.perplexity.ai/) | ✅ | 🛑 | 🏗️ |
 
 ## Docs
 

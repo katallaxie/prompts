@@ -4,23 +4,7 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
-	"net/http"
-	"time"
 )
-
-const defaultTimeout = 30 * time.Second
-
-// DefaultClient is the default HTTP client for the chat completion request.
-var DefaultClient = &http.Client{
-	Timeout: defaultTimeout,
-}
-
-// Defaults returns the default options for the chat completion request.
-func Defaults() *Opts {
-	return &Opts{
-		Client: DefaultClient,
-	}
-}
 
 var _ fmt.Stringer = (*Role)(nil)
 
@@ -59,37 +43,37 @@ const (
 	ToolChoiceRequired ToolChoice = "required"
 )
 
-type isChatCompletionTool interface {
-	isChatCompletionTool()
+type isResponseTool interface {
+	isResponseTool()
 }
 
-// ChatCompletionTool represents a tool for the chat completion request.
-type ChatCompletionTool struct {
-	Tool isChatCompletionTool
+// ResponseTool represents a tool for the chat completion request.
+type ResponseTool struct {
+	Tool isResponseTool
 }
 
-func (c ChatCompletionTool) isChatCompletionTool() {}
+func (c ResponseTool) isResponseTool() {}
 
-// MarshalJSON marshals the chat completion tool into JSON.
-func (c ChatCompletionTool) MarshalJSON() ([]byte, error) {
+// MarshalJSON marshals the response tool into JSON.
+func (c ResponseTool) MarshalJSON() ([]byte, error) {
 	return json.Marshal(c.Tool)
 }
 
-// ChatCompletionFuntionTool represents a function tool for the chat completion request.
-type ChatCompletionFuntionTool struct {
+// ResponseFunctionTool represents a function tool for the chat completion request.
+type ResponseFunctionTool struct {
 	// Function is the function for the chat completion request.
-	Function ChatCompletionFunctionDefintion `json:"function,omitempty"`
+	Function ResponseFunctionDefinition `json:"function,omitempty"`
 }
 
-// MarshalJSON marshals the chat completion function tool into JSON.
-func (c ChatCompletionFuntionTool) MarshalJSON() ([]byte, error) {
+// MarshalJSON marshals the response function tool into JSON.
+func (c ResponseFunctionTool) MarshalJSON() ([]byte, error) {
 	return json.Marshal(struct {
 		Type string `json:"type"`
 		Name string `json:"name,omitempty"`
 		// Description is the description of the function.
 		Description string `json:"description,omitempty"`
 		// Parameters is the parameters for the function.
-		Parameters ChatCompletionFunctionParameters `json:"parameters,omitempty"`
+		Parameters ResponseFunctionParameters `json:"parameters,omitempty"`
 		// Strict is a flag to indicate whether to strictly enforce the parameters.
 		Strict bool `json:"strict,omitempty"`
 	}{
@@ -101,33 +85,33 @@ func (c ChatCompletionFuntionTool) MarshalJSON() ([]byte, error) {
 	})
 }
 
-// ChatCompletionFunctionDefintion represents the function definition for the chat completion request.
-type ChatCompletionFunctionDefintion struct {
+// ResponseFunctionDefinition represents the function definition for the chat completion request.
+type ResponseFunctionDefinition struct {
 	// Name is the name of the function.
 	Name string `json:"name"`
 	// Description is the description of the function.
 	Description string `json:"description,omitempty"`
 	// Parameters is the parameters for the function.
-	Parameters ChatCompletionFunctionParameters `json:"parameters,omitempty"`
+	Parameters ResponseFunctionParameters `json:"parameters,omitempty"`
 	// Strict is a flag to indicate whether to strictly enforce the parameters.
 	Strict bool `json:"strict,omitempty"`
 }
 
-func (c ChatCompletionFuntionTool) isChatCompletionTool() {}
+func (c ResponseFunctionTool) isResponseTool() {}
 
-// ChatCompletionFunctionProperties represents the properties for the function tool.
-type ChatCompletionFunctionProperties map[string]json.RawMessage
+// ResponseFunctionProperties represents the properties for the function tool.
+type ResponseFunctionProperties map[string]json.RawMessage
 
-// ChatCompletionFunctionParameters represents the parameters for the function tool.
-type ChatCompletionFunctionParameters struct {
+// ResponseFunctionParameters represents the parameters for the function tool.
+type ResponseFunctionParameters struct {
 	// Properties is the properties for the function tool.
-	Properties ChatCompletionFunctionProperties `json:"properties,omitempty"`
+	Properties ResponseFunctionProperties `json:"properties,omitempty"`
 	// Required is the required parameters for the function tool.
 	Required []string `json:"required,omitempty"`
 }
 
-// MarshalJSON marshals the chat completion function parameters into JSON.
-func (c ChatCompletionFunctionParameters) MarshalJSON() ([]byte, error) {
+// MarshalJSON marshals the response function parameters into JSON.
+func (c ResponseFunctionParameters) MarshalJSON() ([]byte, error) {
 	return json.Marshal(struct {
 		Type       string                     `json:"type"`
 		Properties map[string]json.RawMessage `json:"properties,omitempty"`
@@ -139,40 +123,40 @@ func (c ChatCompletionFunctionParameters) MarshalJSON() ([]byte, error) {
 	})
 }
 
-// ChatCompletionCustomTool represents a custom tool for the chat completion request.
-type ChatCompletionCustomTool struct {
+// ResponseCustomTool represents a custom tool for the chat completion request.
+type ResponseCustomTool struct {
 	// Custom is the custom tool for the chat completion request.
-	Custom ChatCompletionCustomDefintion `json:"custom,omitempty"`
+	Custom ResponseCustomDefinition `json:"custom,omitempty"`
 }
 
-// MarshalJSON marshals the chat completion custom tool into JSON.
-func (c ChatCompletionCustomTool) MarshalJSON() ([]byte, error) {
+// MarshalJSON marshals the response custom tool into JSON.
+func (c ResponseCustomTool) MarshalJSON() ([]byte, error) {
 	return json.Marshal(struct {
-		Type   string                        `json:"type"`
-		Custom ChatCompletionCustomDefintion `json:"custom,omitempty"`
+		Type   string                   `json:"type"`
+		Custom ResponseCustomDefinition `json:"custom,omitempty"`
 	}{
 		Type:   "custom",
 		Custom: c.Custom,
 	})
 }
 
-// ChatCompletionCustomDefintion represents the custom definition for the chat completion request.
-type ChatCompletionCustomDefintion struct {
+// ResponseCustomDefinition represents the custom definition for the chat completion request.
+type ResponseCustomDefinition struct {
 	// Name is the name of the custom tool.
 	Name string `json:"name"`
 	// Description is the description of the custom tool.
 	Description string `json:"description,omitempty"`
 }
 
-func (c ChatCompletionCustomTool) isChatCompletionTool() {}
+func (c ResponseCustomTool) isResponseTool() {}
 
-// ChatCompletionMessageContent is the content of a chat completion message.
-type ChatCompletionMessageContent struct {
-	Content isChatCompletionMessageContent
+// ResponseMessageContent is the content of a response message.
+type ResponseMessageContent struct {
+	Content isResponseMessageContent
 }
 
-// MarhalJSON marshals the chat completion message content into JSON.
-func (c ChatCompletionMessageContent) MarshalJSON() ([]byte, error) {
+// MarshalJSON marshals the response message content into JSON.
+func (c ResponseMessageContent) MarshalJSON() ([]byte, error) {
 	if text, ok := c.GetText(); ok {
 		return json.Marshal(text)
 	}
@@ -180,55 +164,55 @@ func (c ChatCompletionMessageContent) MarshalJSON() ([]byte, error) {
 	return json.Marshal(nil) // Return null if the content is not text
 }
 
-type isChatCompletionMessageContent interface {
-	isChatCompletionMessageContent()
+type isResponseMessageContent interface {
+	isResponseMessageContent()
 }
 
-// NewChatCompletionMessageContent creates a new chat completion message content.
-func NewChatCompletionMessageContent() ChatCompletionMessageContent {
-	return ChatCompletionMessageContent{}
+// NewResponseMessageContent creates a new response message content.
+func NewResponseMessageContent() ResponseMessageContent {
+	return ResponseMessageContent{}
 }
 
-// Reset resets the chat completion message content.
-func (c *ChatCompletionMessageContent) Reset() {
-	*c = ChatCompletionMessageContent{}
+// Reset resets the response message content.
+func (c *ResponseMessageContent) Reset() {
+	*c = ResponseMessageContent{}
 }
 
-// GetText returns the text content of the chat completion message content.
-func (c ChatCompletionMessageContent) GetText() (ChatCompletionMessageContentText, bool) {
-	if text, ok := c.Content.(ChatCompletionMessageContentText); ok {
+// GetText returns the text content of the response message content.
+func (c ResponseMessageContent) GetText() (ResponseMessageContentText, bool) {
+	if text, ok := c.Content.(ResponseMessageContentText); ok {
 		return text, true
 	}
 
-	return ChatCompletionMessageContentText{}, false
+	return ResponseMessageContentText{}, false
 }
 
-// GetImage returns the image content of the chat completion message content.
-func (c ChatCompletionMessageContent) GetImage() (ChatCompletionMessageContentImage, bool) {
-	if image, ok := c.Content.(ChatCompletionMessageContentImage); ok {
+// GetImage returns the image content of the response message content.
+func (c ResponseMessageContent) GetImage() (ResponseMessageContentImage, bool) {
+	if image, ok := c.Content.(ResponseMessageContentImage); ok {
 		return image, true
 	}
 
-	return ChatCompletionMessageContentImage{}, false
+	return ResponseMessageContentImage{}, false
 }
 
-// GetFile returns the file content of the chat completion message content.
-func (c ChatCompletionMessageContent) GetFile() (ChatCompletionMessageContentFile, bool) {
-	if file, ok := c.Content.(ChatCompletionMessageContentFile); ok {
+// GetFile returns the file content of the response message content.
+func (c ResponseMessageContent) GetFile() (ResponseMessageContentFile, bool) {
+	if file, ok := c.Content.(ResponseMessageContentFile); ok {
 		return file, true
 	}
 
-	return ChatCompletionMessageContentFile{}, false
+	return ResponseMessageContentFile{}, false
 }
 
-// ChatCompletionMessageContentText is the text content of a chat completion message.
-type ChatCompletionMessageContentText struct {
+// ResponseMessageContentText is the text content of a response message.
+type ResponseMessageContentText struct {
 	// Text is the text of the content.
 	Text string `json:"text"`
 }
 
-// MarshalJSON marshals the chat completion message content text into JSON.
-func (c ChatCompletionMessageContentText) MarshalJSON() ([]byte, error) {
+// MarshalJSON marshals the response message content text into JSON.
+func (c ResponseMessageContentText) MarshalJSON() ([]byte, error) {
 	return json.Marshal(struct {
 		Type string `json:"type"`
 		Text string `json:"text"`
@@ -238,23 +222,23 @@ func (c ChatCompletionMessageContentText) MarshalJSON() ([]byte, error) {
 	})
 }
 
-func (c ChatCompletionMessageContentText) isChatCompletionMessageContent() {}
+func (c ResponseMessageContentText) isResponseMessageContent() {}
 
-// ChatCompletionMessageContentImage is the image content of a chat completion message.
-type ChatCompletionMessageContentImage struct {
+// ResponseMessageContentImage is the image content of a response message.
+type ResponseMessageContentImage struct {
 	Image Image `json:"image"`
 }
 
-func (c ChatCompletionMessageContentImage) isChatCompletionMessageContent() {}
+func (c ResponseMessageContentImage) isResponseMessageContent() {}
 
-// ChatCompletionMessageContentFile is the file content of a chat completion message.
-type ChatCompletionMessageContentFile struct {
+// ResponseMessageContentFile is the file content of a response message.
+type ResponseMessageContentFile struct {
 	File File `json:"file"`
 }
 
-func (c ChatCompletionMessageContentFile) isChatCompletionMessageContent() {}
+func (c ResponseMessageContentFile) isResponseMessageContent() {}
 
-// File is the file for the chat completion message content.
+// File is the file for the response message content.
 type File struct {
 	// Name is the name of the file.
 	Name string `json:"name"`
@@ -285,26 +269,26 @@ func NewImage(data []byte) Image {
 	return img
 }
 
-// ChatCompletionMessage is the message for chat completion.
-type ChatCompletionMessage struct {
+// ResponseInput is the message for chat completion.
+type ResponseInput struct {
 	// Role is the role of the message sender.
 	Role Role `json:"role"`
 	// Content is the content of the message.
-	Content []ChatCompletionMessageContent `json:"content"`
+	Content []ResponseMessageContent `json:"content"`
 	// Name is the name of the message sender (optional).
 	Name string `json:"name,omitempty"`
 }
 
-// ChatCompletionRequest is the request for chat completion.
-type ChatCompletionRequest struct {
+// ResponseRequest is the request for chat completion.
+type ResponseRequest struct {
 	// Model is the model for the chat completion request.
 	Model string `json:"model"`
 	// Input is the list of messages for the chat completion request.
-	Input []ChatCompletionMessage `json:"input"`
+	Input []ResponseInput `json:"input"`
 	// Instructions is the instructions for the chat completion request.
 	Instructions string `json:"instructions,omitempty"`
 	// Tools is the list of tools to use for the chat completion request.
-	Tools []ChatCompletionTool `json:"tools,omitempty"`
+	Tools []ResponseTool `json:"tools,omitempty"`
 	// ToolChoice is the tool choice for the chat completion request.
 	ToolChoice ToolChoice `json:"tool_choice,omitempty"`
 	// MaxTokens is the maximum number of tokens for the chat completion request.
@@ -317,95 +301,39 @@ type ChatCompletionRequest struct {
 	TopP *float64 `json:"top_p,omitzero"`
 	// TopK is the number of top tokens to sample from
 	TopK *int `json:"top_k,omitzero"`
-	// Opts is the options for the chat completion request.
-	Opts *Opts `json:"-"`
 }
 
-// NewChatCompletionRequest creates a new chat completion request.
-func NewChatCompletionRequest(opts ...Opt) *ChatCompletionRequest {
-	req := new(ChatCompletionRequest)
-	req.Opts = Defaults()
+// RequestOpt is a function type for configuring the ResponseRequest.
+type RequestOpt func(*ResponseRequest)
+
+// NewResponseRequest creates a new chat completion request with the given options.
+func NewResponseRequest(opts ...RequestOpt) *ResponseRequest {
+	req := new(ResponseRequest)
 
 	for _, opt := range opts {
 		opt(req)
 	}
 
 	return req
-}
-
-// NewStreamChatCompletionRequest creates a new chat completion request with streaming enabled.
-func NewStreamChatCompletionRequest(opts ...Opt) *ChatCompletionRequest {
-	req := new(ChatCompletionRequest)
-	req.Stream = true
-	req.Opts = Defaults()
-
-	for _, opt := range opts {
-		opt(req)
-	}
-
-	return req
-}
-
-// Opt is a function that configures the options for the Prompter.
-type Opt func(*ChatCompletionRequest)
-
-// Opts is the options for configuring the Prompter.
-type Opts struct {
-	// BaseURL is the base URL.
-	BaseURL string `json:"base_url"`
-	// ApiKey is the API key.
-	ApiKey string `json:"api_key"`
-	// Headers are the headers to include in the request.
-	Headers map[string]string `json:"headers"`
-	// Client is the HTTP client.
-	Client *http.Client `json:"-"`
-}
-
-// WithURL configures the base URL.
-func WithURL(url string) Opt {
-	return func(o *ChatCompletionRequest) {
-		o.Opts.BaseURL = url
-	}
-}
-
-// WithApiKey configures the API key.
-func WithApiKey(apiKey string) Opt {
-	return func(o *ChatCompletionRequest) {
-		o.Opts.ApiKey = apiKey
-	}
-}
-
-// WithClient configures the HTTP client.
-func WithClient(client *http.Client) Opt {
-	return func(o *ChatCompletionRequest) {
-		o.Opts.Client = client
-	}
-}
-
-// WithBaseURL configures the base URL.
-func WithBaseURL(url string) Opt {
-	return func(o *ChatCompletionRequest) {
-		o.Opts.BaseURL = url
-	}
 }
 
 // WithInput sets the messages for the chat completion request.
-func WithInput(msgs ...ChatCompletionMessage) Opt {
-	return func(req *ChatCompletionRequest) {
+func WithInput(msgs ...ResponseInput) RequestOpt {
+	return func(req *ResponseRequest) {
 		req.Input = msgs
 	}
 }
 
 // WithInstructions sets the instructions for the chat completion request.
-func WithInstructions(instructions string) Opt {
-	return func(req *ChatCompletionRequest) {
+func WithInstructions(instructions string) RequestOpt {
+	return func(req *ResponseRequest) {
 		req.Instructions = instructions
 	}
 }
 
 // WithTools sets the tools for the chat completion request.
-func WithTools(tools ...ChatCompletionTool) Opt {
-	return func(req *ChatCompletionRequest) {
+func WithTools(tools ...ResponseTool) RequestOpt {
+	return func(req *ResponseRequest) {
 		req.Tools = tools
 	}
 }
