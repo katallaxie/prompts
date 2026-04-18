@@ -1,167 +1,53 @@
-package ollama
+package perplexity
 
 import (
-	"bufio"
-	"bytes"
 	"context"
-	"encoding/json"
-	"fmt"
-	"io"
-	"iter"
-	"net/http"
 
-	"github.com/katallaxie/pkg/cast"
-	"github.com/katallaxie/pkg/slices"
 	"github.com/katallaxie/prompts"
+	"github.com/katallaxie/prompts/openai"
 )
 
-const maxBufferSize = 512 * 1 * 1000
+type (
+	ResponseRequest            = openai.ResponseRequest
+	Response                   = openai.Response
+	ResponseInput              = openai.ResponseInput
+	ResponseTool               = openai.ResponseTool
+	ResponseMessageContent     = openai.ResponseMessageContent
+	ResponseMessageContentText = openai.ResponseMessageContentText
+	ResponseFunctionTool       = openai.ResponseFunctionTool
+	ResponseFunctionDefinition = openai.ResponseFunctionDefinition
+	ResponseFunctionParameters = openai.ResponseFunctionParameters
+	ResponseFunctionProperties = openai.ResponseFunctionProperties
+	Role                       = openai.Role
+)
 
-// DefaultURL is the default endpoint for the Ollama API.
-const DefaultURL = "http://localhost:7869/api/chat"
+// Role constants for the Perplexity API.
+const (
+	RoleAgent     Role = "agent"
+	RoleNone      Role = "none"
+	RoleSystem    Role = "system"
+	RoleTool      Role = "tool"
+	RoleUser      Role = "user"
+	RoleDeveloper Role = "developer"
+)
 
-// DefaultModel is the default model for the Ollama API.
-const DefaultModel = "smollm"
-
-// Defaults returns the default options for the Ollama API.
-func Defaults(opts ...prompts.Opt) []prompts.Opt {
-	defaults := []prompts.Opt{
-		prompts.WithURL(DefaultURL),
-		prompts.WithClient(http.DefaultClient),
-	}
-
-	return slices.Append(defaults, opts...)
+// Ollama is a struct that implements the Prompter interface for the Ollama API.
+type Ollama[I *ResponseRequest, O *Response] struct {
+	client *prompts.Client
 }
 
-// Event is the structure of the event stream response from the Ollama API.
-type Event struct {
-	Model     string `json:"model"`
-	CreatedAt string `json:"created_at"`
-	Message   struct {
-		Role    string `json:"role"`
-		Content string `json:"content"`
-		Images  []struct {
-			URL  string `json:"url"`
-			Size int    `json:"size"`
-		} `json:"images"`
-	} `json:"message"`
-	Done bool `json:"done"`
+// New creates a new Ollama with the given client.
+func New(client *prompts.Client) prompts.Prompter[*ResponseRequest, *Response] {
+	base := client.New().Base(DefaultURL)
+
+	return &Ollama[*ResponseRequest, *Response]{client: base}
 }
 
-var _ prompts.Transformer[Event] = (*Transformer)(nil)
+// Respond sends a chat completion request and returns the response.
+func (p *Ollama[I, O]) Respond(ctx context.Context, req I) (O, error) {
+	res := &Response{}
 
-// Transformer is a struct that implements the Transformer interface for the Ollama API.
-type Transformer struct{}
-
-// Transform transforms an event into a ChatCompletionResponse.
-func (t *Transformer) Transform(iter iter.Seq[Event]) prompts.Generator {
-	return func(yield func(*prompts.ChatCompletionResponse, error) bool) {
-		for e := range iter {
-			var res prompts.ChatCompletionResponse
-			res.Model = e.Model
-			res.Choices = []prompts.ChatCompletionChoice{
-				{
-					Message: prompts.ChatCompletionChoiceIndex{
-						Role:    prompts.Role(e.Message.Role),
-						Content: e.Message.Content,
-					},
-				},
-			}
-
-			if !yield(&res, nil) {
-				break
-			}
-		}
-	}
-}
-
-// NewTransformer creates a new Transformer.
-func NewTransformer() *Transformer {
-	return &Transformer{}
-}
-
-var _ prompts.Decoder[Event] = (*Decoder)(nil)
-
-// Decoder is a struct that implements the Decoder interface for the Ollama API.
-type Decoder struct{}
-
-// Decode decodes the event stream response from the Ollama API into a sequence of Events.
-func (d *Decoder) Decode(body io.ReadCloser) iter.Seq[Event] {
-	scn := bufio.NewScanner(body)
-	scn.Split(bufio.ScanLines)
-	scn.Buffer(make([]byte, maxBufferSize), maxBufferSize)
-
-	return func(yield func(Event) bool) {
-		for scn.Scan() {
-			event := cast.Zero[Event]()
-
-			b := scn.Bytes()
-			if len(b) == 0 {
-				continue
-			}
-
-			if err := json.Unmarshal(b, &event); err != nil {
-				break
-			}
-
-			if !yield(event) {
-				break
-			}
-		}
-
-		body.Close()
-	}
-}
-
-// NewDecoder creates a new Decoder.
-func NewDecoder() *Decoder {
-	return &Decoder{}
-}
-
-// Ollama is a prompter that implements the Prompter interface for the Ollama API.
-type Ollama struct{}
-
-var _ prompts.Prompter = (*Ollama)(nil)
-
-// New creates a new Ollama prompter with the given options.
-func New() *Ollama {
-	return &Ollama{}
-}
-
-// SendCompletionRequest sends a chat completion request to the Ollama API and returns the response.
-func (p *Ollama) SendCompletionRequest(ctx context.Context, req *prompts.ChatCompletionRequest) (*prompts.ChatCompletionResponse, error) {
-	res := &prompts.ChatCompletionResponse{}
-
-	b, err := json.Marshal(req)
-	if err != nil {
-		return nil, err
-	}
-
-	r, err := http.NewRequestWithContext(ctx, http.MethodPost, req.Opts.BaseURL, bytes.NewBuffer(b))
-	if err != nil {
-		return nil, err
-	}
-
-	r.Header.Set("Content-Type", "application/json")
-	r.Header.Set("Authorization", "Bearer "+req.Opts.ApiKey)
-	r.Header.Set("Accept", "application/json")
-
-	resp, err := req.Opts.Client.Do(r)
-	if err != nil {
-		return nil, err
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("unexpected status code: %d", resp.StatusCode)
-	}
-
-	body, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return nil, err
-	}
-
-	err = json.Unmarshal(body, res)
+	_, err := p.client.New().Post("responses").BodyJSON(req).ReceiveSuccess(res)
 	if err != nil {
 		return nil, err
 	}
@@ -169,37 +55,8 @@ func (p *Ollama) SendCompletionRequest(ctx context.Context, req *prompts.ChatCom
 	return res, nil
 }
 
-// SendStreamCompletionRequest sends a chat completion request and streams the response.
-func (p *Ollama) SendStreamCompletionRequest(ctx context.Context, req *prompts.ChatCompletionRequest) (prompts.Generator, error) {
-	b, err := json.Marshal(req)
-	if err != nil {
-		return nil, err
-	}
+// DefaultURL is the default endpoint for the Ollama API.
+const DefaultURL = "http://localhost:11434/v1/"
 
-	r, err := http.NewRequestWithContext(ctx, http.MethodPost, req.Opts.BaseURL, bytes.NewBuffer(b))
-	if err != nil {
-		return nil, err
-	}
-
-	r.Header.Set("Content-Type", "application/json")
-	r.Header.Set("Authorization", "Bearer "+req.Opts.ApiKey)
-	r.Header.Set("Accept", "text/event-stream")
-	r.Header.Set("Connection", "keep-alive")
-
-	resp, err := req.Opts.Client.Do(r) //nolint:bodyclose
-	if err != nil {
-		return nil, err
-	}
-
-	if resp.StatusCode != http.StatusOK {
-		var promptErr prompts.PromptError
-		err := json.NewDecoder(resp.Body).Decode(&promptErr)
-		if err != nil {
-			return nil, err
-		}
-
-		return nil, &promptErr
-	}
-
-	return NewTransformer().Transform(NewDecoder().Decode(resp.Body)), nil
-}
+// DefaultModel is the default model for the Ollama API.
+const DefaultModel = "qwen3:8b"
